@@ -99,7 +99,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
 #topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding-top:calc(12px + env(safe-area-inset-top,0px));}
 #topbar-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--gold);}
-#topbar-sub{font-size:11px;color:var(--muted);margin-top:1px;font-family:'JetBrains Mono',monospace;}
+#topbar-sub{font-size:10px;color:var(--muted);margin-top:1px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 120px);}
 .top-btns{display:flex;gap:6px;}
 .tbtn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;}
 .tbtn.gold{background:var(--gold);color:#0a0f1e;border-color:var(--gold);}
@@ -141,8 +141,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .empty-sub{font-size:13px;line-height:1.6;}
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
-.stat-num{font-size:24px;font-weight:800;color:var(--gold);}
-.stat-label{font-size:11px;color:var(--muted);margin-top:2px;}
+.stat-num{font-size:18px;font-weight:800;color:var(--gold);}
+.stat-label{font-size:10px;color:var(--muted);margin-top:1px;}
 .note-card{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px;}
 .note-date{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
 .note-title{font-size:14px;font-weight:700;margin-bottom:4px;}
@@ -270,7 +270,8 @@ input[type=file]{display:none;}
 <script>
 // ── CONFIGURACIÓN SYNC ──────────────────────────────────────────────
 // Pega aquí la URL de tu Google Apps Script (doGet que devuelve el JSON)
-const SYNC_URL = '';
+// Pega aquí la URL del Apps Script de Google Drive para sincronización automática
+const SYNC_URL = ''; // ej: 'https://script.google.com/macros/s/XXXX/exec'
 const CACHE_KEY = 'ti-movil-db';
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // auto-refresco cada 5 min
 // ────────────────────────────────────────────────────────────────────
@@ -687,14 +688,19 @@ function toggleCollapse(btnId,bodyId) {
 
 /* ── DIARIO ── */
 function parseFechaEntry(n) {
-  // usa createdAt si existe (ms precisos), si no parsea date en varios formatos
   const src = n.createdAt || n.date || n.timestamp || '';
   if (!src) return 0;
-  let d = new Date(src);
+  const s = String(src).trim();
+  // ISO / RFC — new Date() lo entiende directamente
+  let d = new Date(s);
   if (!isNaN(d)) return d.getTime();
-  // formato DD/MM/YYYY o DD-MM-YYYY
-  const m = String(src).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-  if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+  // "4/11/2026, 13:45:00"  o  "04/11/2026 13:45"  (formato español PC)
+  const mEs = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})[\s,]*(\d{1,2}:\d{2})?/);
+  if (mEs) {
+    const base = `${mEs[3]}-${mEs[2].padStart(2,'0')}-${mEs[1].padStart(2,'0')}`;
+    d = new Date(mEs[4] ? `${base}T${mEs[4]}` : base);
+    if (!isNaN(d)) return d.getTime();
+  }
   return 0;
 }
 function renderDiary() {
@@ -726,14 +732,26 @@ function renderDiary() {
 function openModalDiary(id) {
   const n = id ? db.notesHistory.find(x=>String(x.id)===String(id)) : null;
   const today = new Date().toISOString().split('T')[0];
+  // Compatibilidad con notas del PC (usan 'text'/'author') y del móvil ('title'/'technician')
+  const titulo   = n ? (n.title || n.text || '') : '';
+  const tecnico  = n ? (n.technician || n.author || '') : '';
+  const contenido= n ? (n.content || (n.title ? '' : n.text) || '') : '';
+  // Fecha: intentar extraer YYYY-MM-DD de cualquier formato
+  let fechaVal = today;
+  if (n) {
+    const src = n.date || n.createdAt || '';
+    const mEs = String(src).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if (mEs) fechaVal = `${mEs[3]}-${mEs[2].padStart(2,'0')}-${mEs[1].padStart(2,'0')}`;
+    else if (src) { const d = new Date(src); if (!isNaN(d)) fechaVal = d.toISOString().split('T')[0]; }
+  }
   openModal(n?'Editar entrada':'Nueva entrada diario',`
     <div style="display:flex;flex-direction:column;gap:12px;">
       ${n?`<button class="btn-del" onclick="deleteDiary('${n.id}')">🗑️ Eliminar entrada</button>`:''}
-      <div><label>Título</label><input id="m-title" value="${n?.title||''}"></div>
-      <div><label>Fecha</label><input id="m-date" type="date" value="${n?.date?n.date.split('T')[0]:today}"></div>
-      <div><label>Técnico</label><input id="m-tech" value="${n?.technician||''}"></div>
-      <div><label>Categoría</label><input id="m-cat" value="${n?.category||''}"></div>
-      <div><label>Contenido</label><textarea id="m-content" style="min-height:140px;">${n?.content||''}</textarea></div>
+      <div><label>Título</label><input id="m-title" value="${titulo.replace(/"/g,'&quot;')}"></div>
+      <div><label>Fecha</label><input id="m-date" type="date" value="${fechaVal}"></div>
+      <div><label>Técnico</label><input id="m-tech" value="${tecnico.replace(/"/g,'&quot;')}"></div>
+      <div><label>Categoría</label><input id="m-cat" value="${(n?.category||'').replace(/"/g,'&quot;')}"></div>
+      <div><label>Contenido</label><textarea id="m-content" style="min-height:140px;">${contenido}</textarea></div>
     </div>`,'diary',id);
 }
 function deleteDiary(id) {
@@ -770,8 +788,16 @@ function saveModal() {
     renderManuals();
   } else if (modalMode === 'diary') {
     const data = { title:val('m-title'), date:val('m-date'), technician:val('m-tech'), category:val('m-cat'), content:val('m-content') };
-    if (editId) { const idx=db.notesHistory.findIndex(x=>String(x.id)===String(editId)); if(idx>=0) db.notesHistory[idx]={...db.notesHistory[idx],...data}; }
-    else { db.notesHistory.push({id:uid(), createdAt:new Date().toISOString(), ...data}); }
+    if (editId) {
+      const idx=db.notesHistory.findIndex(x=>String(x.id)===String(editId));
+      if(idx>=0) {
+        const orig = db.notesHistory[idx];
+        // Sincronizar también campos del PC para no romper la app de escritorio
+        if (orig.text !== undefined) data.text = data.title;
+        if (orig.author !== undefined) data.author = data.technician;
+        db.notesHistory[idx]={...orig,...data};
+      }
+    } else { db.notesHistory.push({id:uid(), createdAt:new Date().toISOString(), ...data}); }
     renderDiary();
   } else if (modalMode === 'dgp') {
     if (!db.dgpDevices) db.dgpDevices = [];
