@@ -714,7 +714,7 @@ function renderDiary() {
     const tecnico = n.technician || n.author || '';
     const cuerpo  = n.content || (n.title ? n.text : '');
     const urgente = n.isUrgent;
-    return '<div class="note-card" style="margin-bottom:8px;position:relative;"'+(urgente?' style="border-left-color:var(--red)"':'')+'>'+
+    return '<div class="note-card" style="margin-bottom:8px;position:relative;'+(urgente?'border-left-color:var(--red)':'')+'">'+
       '<button class="edit-btn" style="position:absolute;top:8px;right:8px;" onclick="openModalDiary(\''+n.id+'\')">✏️</button>'+
       '<div class="note-date">'+(n.date||'')+( tecnico?' · '+tecnico:'' )+'</div>'+
       '<div class="note-title">'+(urgente?'🚨 ':'')+titulo+'</div>'+
@@ -724,7 +724,7 @@ function renderDiary() {
   }).join('');
 }
 function openModalDiary(id) {
-  const n = id ? db.notesHistory.find(x=>x.id===id) : null;
+  const n = id ? db.notesHistory.find(x=>String(x.id)===String(id)) : null;
   const today = new Date().toISOString().split('T')[0];
   openModal(n?'Editar entrada':'Nueva entrada diario',`
     <div style="display:flex;flex-direction:column;gap:12px;">
@@ -770,7 +770,7 @@ function saveModal() {
     renderManuals();
   } else if (modalMode === 'diary') {
     const data = { title:val('m-title'), date:val('m-date'), technician:val('m-tech'), category:val('m-cat'), content:val('m-content') };
-    if (editId) { const idx=db.notesHistory.findIndex(x=>x.id===editId); if(idx>=0) db.notesHistory[idx]={...db.notesHistory[idx],...data}; }
+    if (editId) { const idx=db.notesHistory.findIndex(x=>String(x.id)===String(editId)); if(idx>=0) db.notesHistory[idx]={...db.notesHistory[idx],...data}; }
     else { db.notesHistory.push({id:uid(), createdAt:new Date().toISOString(), ...data}); }
     renderDiary();
   } else if (modalMode === 'dgp') {
