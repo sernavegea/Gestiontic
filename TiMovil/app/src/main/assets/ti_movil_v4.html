@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TI Móvil">
+<meta name="theme-color" content="#0a0f1e">
+<title>TI Móvil</title>
+<script>
+// Genera iconos PNG via canvas y construye el manifest dinámicamente
+(function() {
+  function makeIcon(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const r = size * 0.2;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(size - r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size - r);
+    ctx.quadraticCurveTo(size, size, size - r, size);
+    ctx.lineTo(r, size); ctx.quadraticCurveTo(0, size, 0, size - r);
+    ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#0a0f1e';
+    ctx.fill();
+    ctx.strokeStyle = '#d4af37';
+    ctx.lineWidth = size * 0.04;
+    ctx.stroke();
+    ctx.font = size * 0.55 + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\uD83D\uDDA5\uFE0F', size / 2, size / 2 + size * 0.03);
+    return c.toDataURL('image/png');
+  }
+
+  window.addEventListener('DOMContentLoaded', function() {
+    const icon192 = makeIcon(192);
+
+    var appleLink = document.createElement('link');
+    appleLink.rel = 'apple-touch-icon';
+    appleLink.href = icon192;
+    document.head.appendChild(appleLink);
+
+    var link = document.createElement('link');
+    link.rel = 'manifest';
+
+    if (location.protocol !== 'file:') {
+      // Servido desde un servidor HTTP/HTTPS (Vite, etc.)
+      // El plugin de Vite sirve el manifest y el SW como URLs reales,
+      // lo que permite a Chrome instalar la app correctamente.
+      link.href = '/ti_movil_manifest.json';
+    } else {
+      // Abierto como archivo local: usar blob URL como fallback
+      var manifest = {
+        name: 'TI Móvil', short_name: 'TI Móvil',
+        description: 'Gestión de equipos y personal TI',
+        start_url: location.href, display: 'standalone',
+        orientation: 'portrait', background_color: '#0a0f1e', theme_color: '#0a0f1e',
+        icons: [{ src: icon192, sizes: '192x192', type: 'image/png', purpose: 'any maskable' }]
+      };
+      link.href = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: 'application/json' }));
+    }
+    document.head.appendChild(link);
+  });
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    if (location.protocol !== 'file:') {
+      // En servidor: registrar el SW desde la URL real que sirve el plugin de Vite
+      navigator.serviceWorker.register('/ti_movil_sw.js', { scope: '/' }).catch(function(){});
+    } else {
+      // En file://: usar blob URL (funciona para offline, pero no para instalar PWA)
+      var swCode = [
+        "const CACHE='ti-movil-v2';",
+        "self.addEventListener('install',e=>{self.skipWaiting();});",
+        "self.addEventListener('activate',e=>{e.waitUntil(clients.claim());});",
+        "self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request)));});"
+      ].join('');
+      var swUrl = URL.createObjectURL(new Blob([swCode], { type: 'application/javascript' }));
+      navigator.serviceWorker.register(swUrl, { scope: './' }).catch(function(){});
+    }
+  }
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap');
+:root {
+  --bg:#0a0f1e; --bg2:#111827; --bg3:#1a2235; --border:#1e2d45;
+  --gold:#d4af37; --gold2:#f0d060; --blue:#3b82f6; --green:#22c55e;
+  --red:#ef4444; --amber:#f59e0b; --text:#e2e8f0; --muted:#64748b;
+  --card-r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;}
+#app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
+#topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding-top:calc(12px + env(safe-area-inset-top,0px));}
+#topbar-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--gold);}
+#topbar-sub{font-size:11px;color:var(--muted);margin-top:1px;font-family:'JetBrains Mono',monospace;}
+.top-btns{display:flex;gap:6px;}
+.tbtn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;}
+.tbtn.gold{background:var(--gold);color:#0a0f1e;border-color:var(--gold);}
+#content{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+#navbar{display:flex;background:var(--bg2);border-top:1px solid var(--border);padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+#navbar::-webkit-scrollbar{display:none;}
+.nav-item{flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 4px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Syne',sans-serif;transition:color .15s;position:relative;}
+.nav-item.active{color:var(--gold);}
+.nav-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px;}
+.nav-icon{font-size:20px;line-height:1;}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:.03em;white-space:nowrap;}
+.tab{display:none;flex:1;overflow-y:auto;padding:12px;flex-direction:column;gap:10px;}
+.tab.active{display:flex;}
+.tab::-webkit-scrollbar{width:3px;}.tab::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.search-wrap{position:relative;flex-shrink:0;}
+.search-wrap input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px 11px 38px;font-size:15px;color:var(--text);font-family:'Syne',sans-serif;outline:none;}
+.search-wrap input::placeholder{color:var(--muted);}
+.search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px 16px;}
+.card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
+.card-title{font-size:15px;font-weight:700;line-height:1.3;}
+.card-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.pill-gold{background:rgba(212,175,55,.15);color:var(--gold);}
+.pill-green{background:rgba(34,197,94,.15);color:var(--green);}
+.pill-red{background:rgba(239,68,68,.15);color:var(--red);}
+.pill-blue{background:rgba(59,130,246,.15);color:var(--blue);}
+.pill-amber{background:rgba(245,158,11,.15);color:var(--amber);}
+.pill-gray{background:rgba(100,116,139,.15);color:var(--muted);}
+.info-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.info-row:last-child{border-bottom:none;}
+.info-label{color:var(--muted);min-width:72px;font-size:12px;padding-top:1px;}
+.info-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);word-break:break-all;}
+.info-val.plain{font-family:'Syne',sans-serif;font-size:13px;}
+.section-header{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:4px 0 8px;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--muted);text-align:center;}
+.empty-icon{font-size:44px;}
+.empty-title{font-size:16px;font-weight:700;color:var(--text);}
+.empty-sub{font-size:13px;line-height:1.6;}
+.stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
+.stat-num{font-size:24px;font-weight:800;color:var(--gold);}
+.stat-label{font-size:11px;color:var(--muted);margin-top:2px;}
+.note-card{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px;}
+.note-date{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.note-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.note-body{font-size:13px;color:var(--muted);line-height:1.5;}
+.collapse-btn{width:100%;background:none;border:none;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;}
+.collapse-btn .arrow{color:var(--muted);transition:transform .2s;font-size:12px;}
+.collapse-btn.open .arrow{transform:rotate(180deg);}
+.collapse-body{overflow:hidden;}
+.map-container{position:relative;border-radius:10px;overflow:hidden;background:var(--bg3);min-height:200px;}
+.map-container img{width:100%;height:auto;display:block;}
+.map-marker{position:absolute;transform:translate(-50%,-50%);width:28px;height:28px;border-radius:50%;background:var(--bg);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);}
+.map-tooltip{position:absolute;background:var(--bg2);border:1px solid var(--gold);border-radius:8px;padding:8px 12px;font-size:12px;z-index:10;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;}
+/* FAB */
+.fab{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));right:16px;width:52px;height:52px;border-radius:50%;background:var(--gold);color:#0a0f1e;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(212,175,55,.4);display:flex;align-items:center;justify-content:center;z-index:50;font-weight:900;}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;}
+.modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;}
+.modal-title{font-size:18px;font-weight:800;color:var(--gold);}
+.modal label{font-size:13px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px;}
+.modal input,.modal select,.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:15px;color:var(--text);font-family:'Syne',sans-serif;outline:none;}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--gold);}
+.modal textarea{resize:vertical;min-height:90px;line-height:1.5;}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
+.btn-save{background:var(--gold);color:#0a0f1e;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;font-family:'Syne',sans-serif;cursor:pointer;}
+.btn-cancel{background:var(--bg3);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:13px;font-size:15px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;}
+.btn-del{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;}
+.edit-btn{background:var(--bg3);color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;}
+#splash h1{font-size:32px;font-weight:800;color:var(--gold);}
+#splash p{font-size:14px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;}
+#splash-load{background:var(--gold);color:#0a0f1e;border:none;border-radius:12px;padding:14px 32px;font-size:16px;font-weight:800;font-family:'Syne',sans-serif;cursor:pointer;margin-top:8px;}
+#splash-status{font-size:13px;color:var(--amber);font-family:'JetBrains Mono',monospace;min-height:20px;text-align:center;}
+#splash-manual{margin-top:4px;display:none;flex-direction:column;align-items:center;gap:10px;}
+.logo{font-size:64px;}
+input[type=file]{display:none;}
+.changed-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;margin-left:6px;vertical-align:middle;}
+.sync-btn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;}
+.sync-btn.syncing{color:var(--amber);border-color:var(--amber);}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <div class="logo">🖥️</div>
+  <h1>TI Móvil</h1>
+  <div id="splash-status"></div>
+  <div id="splash-manual">
+    <p style="font-size:14px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;">Carga el archivo JSON de la app de escritorio para ver los datos.</p>
+    <input type="file" id="file-input" accept=".json">
+    <button id="splash-load" onclick="document.getElementById('file-input').click()">📂 Cargar archivo JSON</button>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+  <div id="topbar">
+    <div>
+      <div id="topbar-title">🖥️ TI Móvil</div>
+      <div id="topbar-sub">Sin datos</div>
+    </div>
+    <div class="top-btns">
+      <input type="file" id="file-input2" accept=".json">
+      <button class="tbtn sync-btn" id="sync-btn" onclick="manualSync()">↻</button>
+      <button class="tbtn gold" id="export-btn" onclick="exportJSON()" style="display:none;">⬇ Exportar</button>
+    </div>
+  </div>
+
+  <div id="content">
+    <div class="tab active" id="tab-pcs">
+      <div class="search-wrap"><input type="text" id="search-pcs" placeholder="Buscar PC, IP, usuario…" oninput="renderPcs()"></div>
+      <div class="stats-bar" id="stats-pcs"></div>
+      <div id="list-pcs"></div>
+    </div>
+    <div class="tab" id="tab-personal">
+      <div class="search-wrap"><input type="text" id="search-staff" placeholder="Buscar nombre, placa, DNI…" oninput="renderStaff()"></div>
+      <div id="list-staff"></div>
+    </div>
+    <div class="tab" id="tab-map">
+      <div id="floor-tabs" style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;"></div>
+      <div id="map-view"></div>
+    </div>
+    <div class="tab" id="tab-phones">
+      <div class="search-wrap"><input type="text" id="search-phones" placeholder="Buscar extensión, nombre…" oninput="renderPhones()"></div>
+      <div id="list-phones"></div>
+    </div>
+    <div class="tab" id="tab-manuals">
+      <div class="search-wrap"><input type="text" id="search-manuals" placeholder="Buscar manual…" oninput="renderManuals()"></div>
+      <div id="list-manuals"></div>
+    </div>
+    <div class="tab" id="tab-diary">
+      <div class="search-wrap"><input type="text" id="search-diary" placeholder="Buscar en el diario…" oninput="renderDiary()"></div>
+      <div id="list-diary"></div>
+    </div>
+    <div class="tab" id="tab-dgp">
+      <div class="search-wrap"><input type="text" id="search-dgp" placeholder="Buscar nombre, IMEI, modelo, SIM…" oninput="renderDgp()"></div>
+      <div id="list-dgp"></div>
+    </div>
+  </div>
+
+  <nav id="navbar">
+    <button class="nav-item active" onclick="switchTab('pcs',this)"><span class="nav-icon">🖥️</span><span class="nav-label">PCs</span></button>
+    <button class="nav-item" onclick="switchTab('personal',this)"><span class="nav-icon">👥</span><span class="nav-label">Personal</span></button>
+    <button class="nav-item" onclick="switchTab('map',this)"><span class="nav-icon">🗺️</span><span class="nav-label">Ubic.</span></button>
+    <button class="nav-item" onclick="switchTab('phones',this)"><span class="nav-icon">📞</span><span class="nav-label">Teléfonos</span></button>
+    <button class="nav-item" onclick="switchTab('manuals',this)"><span class="nav-icon">📚</span><span class="nav-label">Manuales</span></button>
+    <button class="nav-item" onclick="switchTab('diary',this)"><span class="nav-icon">📓</span><span class="nav-label">Diario</span></button>
+    <button class="nav-item" onclick="switchTab('dgp',this)"><span class="nav-icon">🔐</span><span class="nav-label">DGP</span></button>
+  </nav>
+</div>
+
+<!-- FAB dinámico -->
+<button class="fab" id="fab" onclick="fabAction()" style="display:none;">＋</button>
+
+<!-- MODAL UNIVERSAL -->
+<div class="modal-overlay" id="modal" style="display:none;" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal-inner">
+    <div class="modal-title" id="modal-title">Nuevo</div>
+    <div id="modal-body"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── CONFIGURACIÓN SYNC ──────────────────────────────────────────────
+// Pega aquí la URL de tu Google Apps Script (doGet que devuelve el JSON)
+const SYNC_URL = '';
+const CACHE_KEY = 'ti-movil-db';
+const SYNC_INTERVAL_MS = 5 * 60 * 1000; // auto-refresco cada 5 min
+// ────────────────────────────────────────────────────────────────────
+
+let db = {computers:[],floors:[],notesHistory:[],staff:[],manuals:[],phones:[],dgpDevices:[],floorImages:{}};
+let activeTab = 'pcs';
+let activeFloor = 0;
+let activeMapPc = null;
+let hasChanges = false;
+let modalMode = null;
+let editId = null;
+let lastSync = null;
+let syncTimer = null;
+
+/* ── SYNC CON DRIVE ── */
+async function syncFromDrive(silent) {
+  if (!SYNC_URL) return false;
+  const btn = document.getElementById('sync-btn');
+  if (btn) { btn.textContent = '⟳'; btn.classList.add('syncing'); }
+  try {
+    const r = await fetch(SYNC_URL + (SYNC_URL.includes('?') ? '&' : '?') + 'cb=' + Date.now());
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    loadData(data);
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch(e) {}
+    if (btn) { btn.textContent = '↻'; btn.classList.remove('syncing'); }
+    return true;
+  } catch(e) {
+    if (!silent) console.warn('Sync Drive error:', e);
+    if (btn) { btn.textContent = '↻'; btn.classList.remove('syncing'); }
+    return false;
+  }
+}
+
+async function manualSync() {
+  if (SYNC_URL) {
+    const ok = await syncFromDrive(false);
+    if (!ok) alert('No se pudo sincronizar con Drive. Comprueba la conexión o carga el JSON manualmente.');
+  } else {
+    document.getElementById('file-input2').click();
+  }
+}
+
+function loadData(data) {
+  db = data;
+  ['computers','floors','notesHistory','staff','manuals','phones','dgpDevices'].forEach(k => { if (!db[k]) db[k] = []; });
+  if (!db.floorImages) db.floorImages = {};
+  lastSync = new Date();
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(db)); } catch(e) {}
+  document.getElementById('splash').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  hasChanges = false;
+  updateTopbar();
+  renderAll();
+}
+
+async function initApp() {
+  // 1. Intentar caché localStorage (instantáneo, sin espera)
+  try {
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const data = JSON.parse(cached);
+      loadData(data);
+      setSplashStatus('Actualizando desde Drive…');
+    }
+  } catch(e) {}
+
+  // 2. Si hay SYNC_URL, sincronizar con Drive
+  if (SYNC_URL) {
+    setSplashStatus('Conectando con Drive…');
+    const ok = await syncFromDrive(true);
+    if (!ok) {
+      if (db.computers.length) {
+        // Tenemos caché, seguimos con ella
+        setSplashStatus('');
+      } else {
+        // Sin caché ni sync → opción manual
+        setSplashStatus('⚠ No se pudo conectar con Drive');
+        showManualOption();
+      }
+    }
+  } else if (!db.computers.length) {
+    // Sin SYNC_URL ni caché → mostrar opción manual
+    showManualOption();
+    setSplashStatus('');
+  }
+
+  // 3. Auto-refresco periódico
+  if (SYNC_URL) {
+    clearInterval(syncTimer);
+    syncTimer = setInterval(() => syncFromDrive(true), SYNC_INTERVAL_MS);
+  }
+}
+
+function setSplashStatus(msg) {
+  const el = document.getElementById('splash-status');
+  if (el) el.textContent = msg;
+}
+
+function showManualOption() {
+  const el = document.getElementById('splash-manual');
+  if (el) el.style.display = 'flex';
+}
+
+/* ── FILE LOAD (manual) ── */
+function loadFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      loadData(data);
+    } catch { alert('Error al leer el JSON.'); }
+  };
+  reader.readAsText(file);
+}
+document.getElementById('file-input').addEventListener('change', e => loadFile(e.target.files[0]));
+document.getElementById('file-input2').addEventListener('change', e => { loadFile(e.target.files[0]); });
+
+function updateTopbar() {
+  const timeStr = lastSync ? lastSync.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : null;
+  const syncPart = timeStr ? `Sync ${timeStr} · ` : '';
+  document.getElementById('topbar-sub').textContent = `${syncPart}${db.computers.length} PCs · ${db.staff.length} personas · ${(db.dgpDevices||[]).length} DGP`;
+  document.getElementById('export-btn').style.display = hasChanges ? 'block' : 'block';
+  document.getElementById('topbar-title').innerHTML = '🖥️ TI Móvil' + (hasChanges ? '<span class="changed-dot" title="Cambios sin exportar"></span>' : '');
+}
+
+function markChanged() {
+  hasChanges = true;
+  updateTopbar();
+}
+
+/* ── EXPORT ── */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `datos_ti_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  hasChanges = false;
+  updateTopbar();
+}
+
+/* ── TAB ── */
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  activeTab = name;
+  const noFab = ['map'];
+  document.getElementById('fab').style.display = noFab.includes(name) ? 'none' : 'flex';
+}
+
+function renderAll() {
+  renderPcs(); renderStaff(); renderMap(); renderPhones(); renderManuals(); renderDiary(); renderDgp();
+  document.getElementById('fab').style.display = 'flex';
+  document.getElementById('export-btn').style.display = 'block';
+}
+
+/* ── FAB ── */
+function fabAction() {
+  if (activeTab === 'pcs') openModalPC(null);
+  else if (activeTab === 'personal') openModalStaff(null);
+  else if (activeTab === 'phones') openModalPhone(null);
+  else if (activeTab === 'manuals') openModalManual(null);
+  else if (activeTab === 'diary') openModalDiary(null);
+  else if (activeTab === 'dgp') openModalDgp(null);
+}
+
+/* ── MODAL HELPERS ── */
+function openModal(title, bodyHTML, mode, id) {
+  modalMode = mode; editId = id;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  document.body.style.overflow = '';
+  modalMode = null; editId = null;
+}
+function closeModalOutside(e) { if (e.target === document.getElementById('modal')) closeModal(); }
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+/* ── PCs ── */
+function pcStatus(pc) {
+  if (!pc.status) return {label:'Sin estado',cls:'pill-gray'};
+  const s = pc.status.toLowerCase();
+  if (s.includes('activo')||s.includes('operativ')) return {label:pc.status,cls:'pill-green'};
+  if (s.includes('baja')||s.includes('avería')||s.includes('incidencia')) return {label:pc.status,cls:'pill-red'};
+  if (s.includes('reserva')||s.includes('almac')) return {label:pc.status,cls:'pill-amber'};
+  return {label:pc.status,cls:'pill-gold'};
+}
+function renderPcs() {
+  const q = (document.getElementById('search-pcs').value||'').toLowerCase();
+  const list = db.computers.filter(pc => !q || [pc.name,pc.ip,pc.mac,pc.assignedTo,pc.groupName,pc.serialNumber,pc.notes].some(v=>v&&v.toLowerCase().includes(q)));
+  const total = db.computers.length;
+  const impresoras = db.computers.filter(p=>p.deviceType==='printer').length;
+  const pcs = total - impresoras;
+  document.getElementById('stats-pcs').innerHTML = `
+    <div class="stat-box"><div class="stat-num">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--blue)">${pcs}</div><div class="stat-label">PCs</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:var(--amber)">${impresoras}</div><div class="stat-label">Impresoras</div></div>`;
+  if (!list.length) { document.getElementById('list-pcs').innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div></div>`; return; }
+  const groups = {};
+  list.forEach(pc => { const g = pc.groupName||'Sin grupo'; if (!groups[g]) groups[g]=[]; groups[g].push(pc); });
+  let html = '';
+  Object.entries(groups).forEach(([gname,pcs]) => {
+    html += `<div class="section-header">${gname} (${pcs.length})</div>`;
+    pcs.forEach(pc => {
+      const isPrinter = pc.deviceType === 'printer';
+      const icon = isPrinter ? '🖨️' : '🖥️';
+      const users = pc.users || [];
+      html += `<div class="card" style="margin-bottom:8px;">
+        <div class="card-header">
+          <div><div class="card-title">${icon} ${pc.name||'Sin nombre'}</div>${pc.assignedTo?`<div class="card-sub">👤 ${pc.assignedTo}</div>`:''}</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            ${isPrinter?'<span class="pill pill-amber">Impresora</span>':''}
+            <button class="edit-btn" onclick="openModalPC('${pc.id}')">✏️</button>
+          </div>
+        </div>
+        ${pc.ip?`<div class="info-row"><span class="info-label">IP</span><span class="info-val">${pc.ip}</span></div>`:''}
+        ${pc.mac?`<div class="info-row"><span class="info-label">MAC</span><span class="info-val">${pc.mac}</span></div>`:''}
+        ${pc.serialNumber?`<div class="info-row"><span class="info-label">Serie</span><span class="info-val">${pc.serialNumber}</span></div>`:''}
+        ${pc.model?`<div class="info-row"><span class="info-label">Modelo</span><span class="info-val plain">${pc.model}</span></div>`:''}
+        ${pc.os?`<div class="info-row"><span class="info-label">SO</span><span class="info-val plain">${pc.os}</span></div>`:''}
+        ${pc.deliveryDate?`<div class="info-row"><span class="info-label">Entrega</span><span class="info-val plain">${pc.deliveryDate}</span></div>`:''}
+        ${users.length?`<div class="info-row"><span class="info-label">Usuarios</span><span class="info-val plain" style="display:flex;flex-wrap:wrap;gap:4px;">${users.map(u=>`<span class="pill pill-blue">👤 ${u.username}${u.password?' · '+u.password:''}</span>`).join('')}</span></div>`:''}
+        ${pc.notes?`<div class="info-row"><span class="info-label">Notas</span><span class="info-val plain" style="color:var(--gold)">${pc.notes}</span></div>`:''}
+      </div>`;
+    });
+  });
+  document.getElementById('list-pcs').innerHTML = html;
+}
+function openModalPC(id) {
+  const pc = id ? db.computers.find(c=>c.id===id) : null;
+  const groups = [...new Set(db.computers.map(c=>c.groupName).filter(Boolean))];
+  const statusOpts = ['Activo','Baja','Avería','Reserva','Almacén','Pendiente'].map(s=>`<option${pc&&pc.status===s?' selected':''}>${s}</option>`).join('');
+  const groupOpts = ['Sin grupo',...groups].map(g=>`<option${pc&&pc.groupName===g?' selected':''}>${g}</option>`).join('');
+  openModal(pc?'Editar PC':'Nuevo PC', `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${pc?`<button class="btn-del" onclick="deletePC('${pc.id}')">🗑️ Eliminar PC</button>`:''}
+      <div><label>Nombre</label><input id="m-name" value="${pc?.name||''}"></div>
+      <div><label>IP</label><input id="m-ip" value="${pc?.ip||''}" inputmode="decimal"></div>
+      <div><label>MAC</label><input id="m-mac" value="${pc?.mac||''}"></div>
+      <div><label>Número de serie</label><input id="m-serial" value="${pc?.serialNumber||''}"></div>
+      <div><label>Modelo</label><input id="m-model" value="${pc?.model||''}"></div>
+      <div><label>Sistema operativo</label><input id="m-os" value="${pc?.os||''}"></div>
+      <div><label>Asignado a</label><input id="m-user" value="${pc?.assignedTo||''}"></div>
+      <div><label>Estado</label><select id="m-status">${statusOpts}</select></div>
+      <div><label>Grupo</label><select id="m-group">${groupOpts}</select><input id="m-group-new" placeholder="O escribe un grupo nuevo…" style="margin-top:6px;"></div>
+      <div><label>Fecha de entrega</label><input id="m-date" type="date" value="${pc?.deliveryDate||''}"></div>
+      <div><label>Notas</label><textarea id="m-notes">${pc?.notes||''}</textarea></div>
+    </div>`, 'pc', id);
+}
+function deletePC(id) {
+  if (!confirm('¿Eliminar este PC?')) return;
+  db.computers = db.computers.filter(c=>c.id!==id);
+  closeModal(); markChanged(); renderPcs();
+}
+
+/* ── PERSONAL ── */
+function renderStaff() {
+  const q = (document.getElementById('search-staff').value||'').toLowerCase();
+  const list = db.staff.filter(p=>!q||[p.nombre,p.apellidos,p.placa,p.dni,p.telefono,p.categoria].some(v=>v&&v.toLowerCase().includes(q)));
+  if (!list.length) { document.getElementById('list-staff').innerHTML=`<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">${db.staff.length?'Sin resultados':'Sin personal'}</div></div>`; return; }
+  const cats = {};
+  list.forEach(p=>{ const c=p.categoria||'Sin categoría'; if(!cats[c])cats[c]=[]; cats[c].push(p); });
+  let html='';
+  Object.entries(cats).forEach(([cat,people])=>{
+    html+=`<div class="section-header">${cat} (${people.length})</div>`;
+    people.forEach(p=>{
+      html+=`<div class="card" style="margin-bottom:8px;">
+        <div class="card-header">
+          <div><div class="card-title">${p.apellidos||''} ${p.nombre||''}</div>${p.placa?`<div class="card-sub">🔖 ${p.placa}</div>`:''}</div>
+          <div style="display:flex;gap:6px;align-items:center;">${p.dni?`<span class="pill pill-gray">${p.dni}</span>`:''}<button class="edit-btn" onclick="openModalStaff('${p.id}')">✏️</button></div>
+        </div>
+        ${p.telefono?`<div class="info-row"><span class="info-label">Teléfono</span><span class="info-val">${p.telefono}</span></div>`:''}
+      </div>`;
+    });
+  });
+  document.getElementById('list-staff').innerHTML=html;
+}
+function openModalStaff(id) {
+  const p = id ? db.staff.find(s=>s.id===id) : null;
+  const cats = [...new Set(db.staff.map(s=>s.categoria).filter(Boolean))];
+  const catOpts = ['Sin categoría',...cats].map(c=>`<option${p&&p.categoria===c?' selected':''}>${c}</option>`).join('');
+  openModal(p?'Editar persona':'Nueva persona',`
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${p?`<button class="btn-del" onclick="deleteStaff('${p.id}')">🗑️ Eliminar persona</button>`:''}
+      <div><label>Nombre</label><input id="m-nombre" value="${p?.nombre||''}"></div>
+      <div><label>Apellidos</label><input id="m-apellidos" value="${p?.apellidos||''}"></div>
+      <div><label>DNI</label><input id="m-dni" value="${p?.dni||''}"></div>
+      <div><label>Placa / matrícula</label><input id="m-placa" value="${p?.placa||''}"></div>
+      <div><label>Teléfono</label><input id="m-tel" value="${p?.telefono||''}" inputmode="tel"></div>
+      <div><label>Categoría</label><select id="m-cat">${catOpts}</select><input id="m-cat-new" placeholder="O escribe categoría nueva…" style="margin-top:6px;"></div>
+    </div>`,'staff',id);
+}
+function deleteStaff(id) {
+  if (!confirm('¿Eliminar esta persona?')) return;
+  db.staff = db.staff.filter(s=>s.id!==id);
+  closeModal(); markChanged(); renderStaff();
+}
+
+/* ── TELÉFONOS ── */
+function phoneVal(p) {
+  var keys = Array.prototype.slice.call(arguments, 1);
+  for(var i=0;i<keys.length;i++){ if(p[keys[i]]) return p[keys[i]]; }
+  return '';
+}
+function renderPhones() {
+  const q = (document.getElementById('search-phones').value||'').toLowerCase();
+  const list = (db.phones||[]).filter(p=>!q||[
+    p.extension, p.name, p.department, p.location, p.notes,
+    p.puesto, p.telefono, p.telefonoCorto, p.camino
+  ].some(v=>v&&String(v).toLowerCase().includes(q)));
+  if (!list.length) {
+    document.getElementById('list-phones').innerHTML='<div class="empty"><div class="empty-icon">📞</div><div class="empty-title">'+(db.phones&&db.phones.length?'Sin resultados':'Sin teléfonos')+'</div></div>';
+    return;
+  }
+  const shown = list.slice(0, 200);
+  let html = shown.map(function(p) {
+    const nombre = phoneVal(p,'name','puesto');
+    const ext    = phoneVal(p,'extension','telefonoCorto');
+    const telFull= phoneVal(p,'telefono');
+    const dept   = phoneVal(p,'department','camino');
+    const loc    = phoneVal(p,'location');
+    const notas  = phoneVal(p,'notes');
+    return '<div class="card" style="margin-bottom:8px;">'
+      +'<div class="card-header">'
+      +'<div><div class="card-title">'+(nombre||'Sin nombre')+'</div>'
+      +(dept?'<div class="card-sub" style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+dept+'</div>':'')
+      +'</div>'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'
+      +(ext?'<span class="pill pill-blue" style="font-family:JetBrains Mono,monospace">✂️ '+ext+'</span>':'')
+      +'<button class="edit-btn" onclick="openModalPhone(\''+p.id+'\')">✏️</button>'
+      +'</div></div>'
+      +(telFull?'<div class="info-row"><span class="info-label">Teléfono</span><span class="info-val">'+telFull+'</span></div>':'')
+      +(loc?'<div class="info-row"><span class="info-label">Ubicación</span><span class="info-val plain">'+loc+'</span></div>':'')
+      +(notas?'<div class="info-row"><span class="info-label">Notas</span><span class="info-val plain" style="color:var(--gold)">'+notas+'</span></div>':'')
+      +'</div>';
+  }).join('');
+  if (list.length > 200) html += '<div style="text-align:center;padding:12px;font-size:13px;color:var(--muted)">Mostrando 200 de '+list.length+'. Usa el buscador para filtrar.</div>';
+  document.getElementById('list-phones').innerHTML = html;
+}
+function openModalPhone(id) {
+  const p = id ? db.phones.find(x=>x.id===id) : null;
+  openModal(p?'Editar teléfono':'Nuevo teléfono',`
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${p?`<button class="btn-del" onclick="deletePhone('${p.id}')">🗑️ Eliminar</button>`:''}
+      <div><label>Nombre / descripción</label><input id="m-name" value="${p?.name||''}"></div>
+      <div><label>Extensión</label><input id="m-ext" value="${p?.extension||''}" inputmode="numeric"></div>
+      <div><label>Departamento</label><input id="m-dept" value="${p?.department||''}"></div>
+      <div><label>Ubicación</label><input id="m-loc" value="${p?.location||''}"></div>
+      <div><label>Notas</label><textarea id="m-notes">${p?.notes||''}</textarea></div>
+    </div>`,'phone',id);
+}
+function deletePhone(id) {
+  if (!confirm('¿Eliminar este teléfono?')) return;
+  db.phones = db.phones.filter(x=>x.id!==id);
+  closeModal(); markChanged(); renderPhones();
+}
+
+/* ── MANUALES ── */
+function renderManuals() {
+  const q = (document.getElementById('search-manuals').value||'').toLowerCase();
+  const list = (db.manuals||[]).filter(m=>!q||[m.title,m.category,m.content,m.tags].some(v=>v&&v.toLowerCase().includes(q)));
+  if (!list.length) { document.getElementById('list-manuals').innerHTML=`<div class="empty"><div class="empty-icon">📚</div><div class="empty-title">${db.manuals?.length?'Sin resultados':'Sin manuales'}</div></div>`; return; }
+  document.getElementById('list-manuals').innerHTML=list.map((m,i)=>`
+    <div class="card" style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+        <button class="collapse-btn" id="mb-${i}" onclick="toggleCollapse('mb-${i}','mc-${i}')">
+          <span style="text-align:left;">${m.title||'Sin título'}</span><span class="arrow">▼</span>
+        </button>
+        <button class="edit-btn" onclick="openModalManual('${m.id}')">✏️</button>
+      </div>
+      <div class="collapse-body" id="mc-${i}" style="max-height:0;transition:max-height .25s ease;">
+        <div style="padding-top:12px;">
+          ${m.category?`<span class="pill pill-blue" style="margin-bottom:8px;display:inline-flex;">${m.category}</span>`:''}
+          ${m.tags?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">${m.tags}</div>`:''}
+          ${m.content?`<div style="font-size:13px;line-height:1.7;white-space:pre-wrap;">${m.content}</div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+function openModalManual(id) {
+  const m = id ? db.manuals.find(x=>x.id===id) : null;
+  openModal(m?'Editar manual':'Nuevo manual',`
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${m?`<button class="btn-del" onclick="deleteManual('${m.id}')">🗑️ Eliminar</button>`:''}
+      <div><label>Título</label><input id="m-title" value="${m?.title||''}"></div>
+      <div><label>Categoría</label><input id="m-cat" value="${m?.category||''}"></div>
+      <div><label>Etiquetas</label><input id="m-tags" value="${m?.tags||''}"></div>
+      <div><label>Contenido</label><textarea id="m-content" style="min-height:160px;">${m?.content||''}</textarea></div>
+    </div>`,'manual',id);
+}
+function deleteManual(id) {
+  if (!confirm('¿Eliminar este manual?')) return;
+  db.manuals = db.manuals.filter(x=>x.id!==id);
+  closeModal(); markChanged(); renderManuals();
+}
+function toggleCollapse(btnId,bodyId) {
+  const btn=document.getElementById(btnId); const body=document.getElementById(bodyId);
+  const isOpen=btn.classList.contains('open');
+  btn.classList.toggle('open',!isOpen);
+  body.style.maxHeight=isOpen?'0':body.scrollHeight+'px';
+}
+
+/* ── DIARIO ── */
+function parseFechaEntry(n) {
+  // usa createdAt si existe (ms precisos), si no parsea date en varios formatos
+  const src = n.createdAt || n.date || n.timestamp || '';
+  if (!src) return 0;
+  let d = new Date(src);
+  if (!isNaN(d)) return d.getTime();
+  // formato DD/MM/YYYY o DD-MM-YYYY
+  const m = String(src).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1]).getTime();
+  return 0;
+}
+function renderDiary() {
+  const q=(document.getElementById('search-diary').value||'').toLowerCase();
+  const list=(db.notesHistory||[])
+    .map((n,i)=>({n,i}))
+    .filter(({n})=>!q||[n.title,n.content,n.technician,n.category,n.text,n.author].some(v=>v&&v.toLowerCase().includes(q)))
+    .sort((a,b)=>{
+      const ta=parseFechaEntry(a.n), tb=parseFechaEntry(b.n);
+      if (tb!==ta) return tb-ta;       // más reciente primero
+      return b.i - a.i;                // mismo timestamp → el que está más abajo en el array (más nuevo) va primero
+    })
+    .map(({n})=>n);
+  if (!list.length) { document.getElementById('list-diary').innerHTML='<div class="empty"><div class="empty-icon">📓</div><div class="empty-title">'+(db.notesHistory&&db.notesHistory.length?'Sin resultados':'Sin entradas')+'</div></div>'; return; }
+  document.getElementById('list-diary').innerHTML=list.map(function(n){
+    const titulo  = n.title || n.text || 'Sin título';
+    const tecnico = n.technician || n.author || '';
+    const cuerpo  = n.content || (n.title ? n.text : '');
+    const urgente = n.isUrgent;
+    return '<div class="note-card" style="margin-bottom:8px;position:relative;"'+(urgente?' style="border-left-color:var(--red)"':'')+'>'+
+      '<button class="edit-btn" style="position:absolute;top:8px;right:8px;" onclick="openModalDiary(\''+n.id+'\')">✏️</button>'+
+      '<div class="note-date">'+(n.date||'')+( tecnico?' · '+tecnico:'' )+'</div>'+
+      '<div class="note-title">'+(urgente?'🚨 ':'')+titulo+'</div>'+
+      (n.category?'<span class="pill pill-gold" style="margin:4px 0 6px;display:inline-flex;font-size:10px;">'+n.category+'</span>':'')+
+      (cuerpo?'<div class="note-body">'+cuerpo+'</div>':'')+
+      '</div>';
+  }).join('');
+}
+function openModalDiary(id) {
+  const n = id ? db.notesHistory.find(x=>x.id===id) : null;
+  const today = new Date().toISOString().split('T')[0];
+  openModal(n?'Editar entrada':'Nueva entrada diario',`
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${n?`<button class="btn-del" onclick="deleteDiary('${n.id}')">🗑️ Eliminar entrada</button>`:''}
+      <div><label>Título</label><input id="m-title" value="${n?.title||''}"></div>
+      <div><label>Fecha</label><input id="m-date" type="date" value="${n?.date?n.date.split('T')[0]:today}"></div>
+      <div><label>Técnico</label><input id="m-tech" value="${n?.technician||''}"></div>
+      <div><label>Categoría</label><input id="m-cat" value="${n?.category||''}"></div>
+      <div><label>Contenido</label><textarea id="m-content" style="min-height:140px;">${n?.content||''}</textarea></div>
+    </div>`,'diary',id);
+}
+function deleteDiary(id) {
+  if (!confirm('¿Eliminar esta entrada?')) return;
+  db.notesHistory = db.notesHistory.filter(x=>x.id!==id);
+  closeModal(); markChanged(); renderDiary();
+}
+
+/* ── SAVE MODAL ── */
+function saveModal() {
+  if (modalMode === 'pc') {
+    const groupNew = val('m-group-new');
+    const group = groupNew || val('m-group');
+    const data = { name:val('m-name'), ip:val('m-ip'), mac:val('m-mac'), serialNumber:val('m-serial'), model:val('m-model'), os:val('m-os'), assignedTo:val('m-user'), status:val('m-status'), groupName:group==='Sin grupo'?'':group, deliveryDate:val('m-date'), notes:val('m-notes') };
+    if (editId) { const idx=db.computers.findIndex(c=>c.id===editId); if(idx>=0) db.computers[idx]={...db.computers[idx],...data}; }
+    else { db.computers.push({id:uid(),...data}); }
+    renderPcs();
+  } else if (modalMode === 'staff') {
+    const catNew = val('m-cat-new');
+    const cat = catNew || val('m-cat');
+    const data = { nombre:val('m-nombre'), apellidos:val('m-apellidos'), dni:val('m-dni'), placa:val('m-placa'), telefono:val('m-tel'), categoria:cat==='Sin categoría'?'':cat };
+    if (editId) { const idx=db.staff.findIndex(s=>s.id===editId); if(idx>=0) db.staff[idx]={...db.staff[idx],...data}; }
+    else { db.staff.push({id:uid(),...data}); }
+    renderStaff();
+  } else if (modalMode === 'phone') {
+    const data = { name:val('m-name'), extension:val('m-ext'), department:val('m-dept'), location:val('m-loc'), notes:val('m-notes') };
+    if (editId) { const idx=db.phones.findIndex(x=>x.id===editId); if(idx>=0) db.phones[idx]={...db.phones[idx],...data}; }
+    else { db.phones.push({id:uid(),...data}); }
+    renderPhones();
+  } else if (modalMode === 'manual') {
+    const data = { title:val('m-title'), category:val('m-cat'), tags:val('m-tags'), content:val('m-content') };
+    if (editId) { const idx=db.manuals.findIndex(x=>x.id===editId); if(idx>=0) db.manuals[idx]={...db.manuals[idx],...data}; }
+    else { db.manuals.push({id:uid(),...data}); }
+    renderManuals();
+  } else if (modalMode === 'diary') {
+    const data = { title:val('m-title'), date:val('m-date'), technician:val('m-tech'), category:val('m-cat'), content:val('m-content') };
+    if (editId) { const idx=db.notesHistory.findIndex(x=>x.id===editId); if(idx>=0) db.notesHistory[idx]={...db.notesHistory[idx],...data}; }
+    else { db.notesHistory.push({id:uid(), createdAt:new Date().toISOString(), ...data}); }
+    renderDiary();
+  } else if (modalMode === 'dgp') {
+    if (!db.dgpDevices) db.dgpDevices = [];
+    const data = { nombre:val('m-nombre'), fechaEntrega:val('m-fecha'), modelo:val('m-modelo'), imei:val('m-imei'), simAbonado:val('m-sim'), pass:val('m-pass') };
+    if (editId) { const idx=db.dgpDevices.findIndex(x=>x.id===editId); if(idx>=0) db.dgpDevices[idx]={...db.dgpDevices[idx],...data}; }
+    else { db.dgpDevices.push({id:uid(),...data}); }
+    renderDgp();
+  }
+  markChanged();
+  closeModal();
+}
+
+/* ── MAPA ── */
+function renderMap() {
+  const allFloors = db.floors;
+  if (!allFloors.length) { document.getElementById('map-view').innerHTML=`<div class="empty"><div class="empty-icon">🗺️</div><div class="empty-title">Sin plantas</div></div>`; return; }
+  if (!activeFloor && allFloors.length) activeFloor = allFloors[0].id;
+  document.getElementById('floor-tabs').innerHTML = allFloors.map(f=>`
+    <button onclick="activeFloor=${f.id};activeMapPc=null;renderMap()" style="padding:7px 14px;border-radius:8px;border:1px solid ${activeFloor===f.id?'var(--gold)':'var(--border)'};background:${activeFloor===f.id?'rgba(212,175,55,0.15)':'var(--bg2)'};color:${activeFloor===f.id?'var(--gold)':'var(--muted)'};font-family:Syne,sans-serif;font-weight:700;font-size:13px;cursor:pointer;">
+      ${f.name}</button>`).join('');
+  const floor = allFloors.find(f=>f.id===activeFloor);
+  const pcs = db.computers.filter(pc=>(pc.floorId===activeFloor||pc.floor===activeFloor)&&pc.mapX!==undefined);
+  const img = db.floorImages&&(db.floorImages[activeFloor]||db.floorImages[String(activeFloor)]);
+  let html = `<div class="map-container" style="margin-top:8px;">`;
+  if (img) html+=`<img src="${img}" alt="Plano ${floor?.name}" style="width:100%;display:block;">`;
+  else html+=`<div style="min-height:220px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;flex-direction:column;gap:8px;"><span style="font-size:36px">🗺️</span>Sin imagen de plano</div>`;
+  pcs.forEach(pc => {
+    const isAct = activeMapPc===pc.id;
+    const isPrinter = pc.deviceType === 'printer';
+    const markerBg = isPrinter ? 'rgba(124,58,237,0.9)' : 'var(--bg)';
+    const markerIcon = isPrinter ? '🖨️' : '🖥️';
+    html+=`<div class="map-marker" style="left:${pc.mapX}%;top:${pc.mapY}%;border-color:${isAct?'var(--red)':isPrinter?'#7c3aed':'var(--gold)'};background:${markerBg};" onclick="toggleMapPc('${pc.id}')">${markerIcon}</div>`;
+    if (isAct) html+=`<div class="map-tooltip" style="left:calc(${pc.mapX}% + 18px);top:calc(${pc.mapY}% - 10px);">
+      <div style="font-weight:700;color:var(--gold);margin-bottom:4px;">${markerIcon} ${pc.name}</div>
+      ${pc.ip?`<div style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--blue)">📡 ${pc.ip}</div>`:''}
+      ${pc.assignedTo?`<div style="font-size:11px;margin-top:2px;">👤 ${pc.assignedTo}</div>`:''}
+      ${pc.groupName?`<div style="font-size:11px;color:var(--muted)">${pc.groupName}</div>`:''}
+    </div>`;
+  });
+  html+=`</div>`;
+  if (!pcs.length) html+=`<div style="text-align:center;padding:12px;font-size:13px;color:var(--muted)">Sin PCs ubicados en esta planta</div>`;
+  document.getElementById('map-view').innerHTML=html;
+}
+/* ── DGP CORPORATIVO ── */
+let dgpRevealId = null;
+
+function renderDgp() {
+  const q = (document.getElementById('search-dgp').value||'').toLowerCase();
+  const list = (db.dgpDevices||[]).filter(d => !q || [d.nombre,d.modelo,d.imei,d.simAbonado,d.pass,d.fechaEntrega].some(v=>v&&v.toLowerCase().includes(q)));
+  if (!list.length) {
+    document.getElementById('list-dgp').innerHTML = `<div class="empty"><div class="empty-icon">🔐</div><div class="empty-title">${(db.dgpDevices||[]).length?'Sin resultados':'Sin dispositivos DGP'}</div><div class="empty-sub">Añade dispositivos desde la app de escritorio o con el botón +</div></div>`;
+    return;
+  }
+  document.getElementById('list-dgp').innerHTML = list.map(d => `
+    <div class="card" style="margin-bottom:8px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📱 ${d.nombre||'Sin nombre'}</div>
+          ${d.modelo?`<div class="card-sub">${d.modelo}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="edit-btn" onclick="openModalDgp('${d.id}')">✏️</button>
+        </div>
+      </div>
+      ${d.fechaEntrega?`<div class="info-row"><span class="info-label">Entrega</span><span class="info-val plain">${d.fechaEntrega}</span></div>`:''}
+      ${d.imei?`<div class="info-row"><span class="info-label">IMEI</span><span class="info-val">${d.imei}</span></div>`:''}
+      ${d.simAbonado?`<div class="info-row"><span class="info-label">SIM</span><span class="info-val plain">${d.simAbonado}</span></div>`:''}
+      <div class="info-row">
+        <span class="info-label">PASS DGP</span>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="info-val" id="pass-${d.id}" style="color:#a78bfa;letter-spacing:0.05em;">${dgpRevealId===d.id?d.pass:'••••••••'}</span>
+          <button onclick="toggleDgpPass('${d.id}')" style="background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:14px;padding:2px 7px;cursor:pointer;">${dgpRevealId===d.id?'🙈':'👁️'}</button>
+        </span>
+      </div>
+    </div>`).join('');
+}
+
+function toggleDgpPass(id) {
+  dgpRevealId = dgpRevealId === id ? null : id;
+  renderDgp();
+}
+
+function openModalDgp(id) {
+  const d = id ? (db.dgpDevices||[]).find(x=>x.id===id) : null;
+  openModal(d?'Editar dispositivo DGP':'Nuevo dispositivo DGP', `
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      ${d?`<button class="btn-del" onclick="deleteDgp('${d.id}')">🗑️ Eliminar dispositivo</button>`:''}
+      <div><label>Nombre / Asignado</label><input id="m-nombre" value="${d?.nombre||''}"></div>
+      <div><label>Fecha entrega</label><input id="m-fecha" type="date" value="${d?.fechaEntrega||''}"></div>
+      <div><label>Modelo</label><input id="m-modelo" value="${d?.modelo||''}"></div>
+      <div><label>IMEI</label><input id="m-imei" value="${d?.imei||''}" inputmode="numeric"></div>
+      <div><label>SIM / Abonado</label><input id="m-sim" value="${d?.simAbonado||''}" inputmode="tel"></div>
+      <div><label>PASS DGP</label><input id="m-pass" value="${d?.pass||''}"></div>
+    </div>`, 'dgp', id);
+}
+
+function deleteDgp(id) {
+  if (!confirm('¿Eliminar este dispositivo?')) return;
+  db.dgpDevices = (db.dgpDevices||[]).filter(x=>x.id!==id);
+  closeModal(); markChanged(); renderDgp();
+}
+
+function toggleMapPc(id) { activeMapPc=activeMapPc===id?null:id; renderMap(); }
+
+// Arranque
+initApp();
+</script>
+</body>
+</html>
