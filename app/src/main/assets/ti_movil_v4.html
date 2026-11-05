@@ -109,6 +109,23 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .nav-item{flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 4px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Syne',sans-serif;transition:color .15s;position:relative;}
 .nav-item.active{color:var(--gold);}
 .nav-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px;}
+/* Landscape: topbar y nav más compactos */
+@media (orientation:landscape) {
+  #topbar{padding:5px 16px 5px;padding-top:calc(5px + env(safe-area-inset-top,0px));}
+  #topbar-sub{display:none;}
+  #topbar-title{font-size:14px;}
+  .top-btns .tbtn{padding:5px 8px;font-size:11px;}
+  #navbar{padding-bottom:calc(2px + env(safe-area-inset-bottom,0px));}
+  .nav-item{padding:4px 4px 2px;}
+  .nav-label{display:none;}
+  .nav-icon{font-size:18px;}
+  .nav-item.active::after{top:0;}
+}
+/* Mapa en pantalla completa */
+body.map-fullscreen #topbar,
+body.map-fullscreen #navbar{display:none!important;}
+body.map-fullscreen #floor-tabs{padding-top:calc(10px + env(safe-area-inset-top,0px));}
+#map-fs-btn{position:absolute;bottom:10px;right:10px;z-index:30;background:rgba(10,15,30,.75);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:16px;padding:5px 8px;cursor:pointer;backdrop-filter:blur(4px);}
 .nav-icon{font-size:20px;line-height:1;}
 .nav-label{font-size:10px;font-weight:600;letter-spacing:.03em;white-space:nowrap;}
 .tab{display:none;flex:1;overflow-y:auto;padding:12px;flex-direction:column;gap:10px;}
@@ -154,7 +171,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .map-container{position:relative;border-radius:10px;overflow:hidden;background:var(--bg3);min-height:200px;touch-action:none;}
 .map-container img{width:100%;height:auto;display:block;user-select:none;-webkit-user-drag:none;}
 .map-inner{position:relative;transform-origin:0 0;will-change:transform;}
-.map-marker{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:var(--bg);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4);z-index:5;}
+.map-marker{position:absolute;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--bg);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:6px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:5;}
 .map-tooltip{position:absolute;background:var(--bg2);border:1px solid var(--gold);border-radius:8px;padding:7px 10px;font-size:11px;z-index:20;min-width:140px;max-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;}
 /* FAB */
 .fab{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));right:16px;width:52px;height:52px;border-radius:50%;background:var(--gold);color:#0a0f1e;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(212,175,55,.4);display:flex;align-items:center;justify-content:center;z-index:50;font-weight:900;}
@@ -978,9 +995,12 @@ function renderMap() {
   const allFloors = db.floors;
   if (!allFloors.length) { document.getElementById('map-view').innerHTML=`<div class="empty"><div class="empty-icon">🗺️</div><div class="empty-title">Sin plantas</div></div>`; return; }
   if (!activeFloor && allFloors.length) activeFloor = allFloors[0].id;
-  document.getElementById('floor-tabs').innerHTML = allFloors.map(f=>`
+  const fsOn = document.body.classList.contains('map-fullscreen');
+  document.getElementById('floor-tabs').innerHTML =
+    allFloors.map(f=>`
     <button onclick="activeFloor=${f.id};activeMapPc=null;renderMap()" style="flex-shrink:0;padding:5px 12px;border-radius:20px;border:1px solid ${activeFloor===f.id?'var(--gold)':'var(--border)'};background:${activeFloor===f.id?'rgba(212,175,55,0.15)':'var(--bg2)'};color:${activeFloor===f.id?'var(--gold)':'var(--muted)'};font-family:Syne,sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">
-      ${f.name}</button>`).join('');
+      ${f.name}</button>`).join('')
+    + `<button onclick="toggleMapFullscreen()" title="${fsOn?'Salir de pantalla completa':'Pantalla completa'}" style="flex-shrink:0;margin-left:auto;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);font-size:14px;cursor:pointer;">${fsOn?'✕':'⛶'}</button>`;
   const floor = allFloors.find(f=>f.id===activeFloor);
   const pcs = db.computers.filter(pc=>(pc.floorId===activeFloor||pc.floor===activeFloor)&&pc.mapX!==undefined);
   const img = db.floorImages&&(db.floorImages[activeFloor]||db.floorImages[String(activeFloor)]);
@@ -1008,6 +1028,11 @@ function renderMap() {
   if (!pcs.length) html+=`<div style="text-align:center;padding:12px;font-size:13px;color:var(--muted)">Sin PCs ubicados en esta planta</div>`;
   document.getElementById('map-view').innerHTML=html;
   initMapZoom();
+}
+
+function toggleMapFullscreen() {
+  document.body.classList.toggle('map-fullscreen');
+  renderMap();
 }
 /* ── DGP CORPORATIVO ── */
 let dgpRevealId = null;
