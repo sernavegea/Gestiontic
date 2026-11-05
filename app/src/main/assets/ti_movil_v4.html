@@ -286,7 +286,153 @@ let editId = null;
 let lastSync = null;
 let syncTimer = null;
 
-/* ── SYNC CON DRIVE ── */
+// ── DRIVE NATIVO (APK con puente AndroidDrive) ─────────────────────
+// La APK expone window.AndroidDrive para leer/escribir datos_ti.json
+// directamente en Google Drive sin necesidad de SYNC_URL.
+const DRIVE = (typeof window.AndroidDrive !== 'undefined') ? window.AndroidDrive : null;
+let driveText = null;      // texto exacto del archivo en la última lectura/escritura
+let driveSaveTimer = null;
+let driveFileName = '';
+
+function isErr(s) { return typeof s === 'string' && s.indexOf('!ERR:') === 0; }
+
+function toast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bg3);color:var(--text);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;font-size:13px;z-index:300;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => { t.style.opacity = '0'; }, 3500);
+}
+
+function setSyncing(on) {
+  const btn = document.getElementById('sync-btn');
+  if (!btn) return;
+  btn.textContent = on ? '⟳' : '↻';
+  btn.classList.toggle('syncing', on);
+}
+
+function driveLoad(silent) {
+  if (!DRIVE || !DRIVE.hasFile()) return false;
+  const txt = DRIVE.read();
+  if (!txt || isErr(txt)) {
+    if (!silent) alert('No se pudo leer datos_ti.json de Drive.\n' + (txt || 'Archivo vacío') + '\n\nSi el archivo se ha movido o renombrado, vuelve a vincularlo con 🔗.');
+    return false;
+  }
+  if (silent && txt === driveText) return true; // nada nuevo
+  let data;
+  try { data = JSON.parse(txt); }
+  catch (e) { if (!silent) alert('datos_ti.json no es un JSON válido: ' + e.message); return false; }
+  driveText = txt;
+  try { driveFileName = DRIVE.fileName() || ''; } catch (e) {}
+  loadData(data);
+  return true;
+}
+
+function scheduleDriveSave() {
+  clearTimeout(driveSaveTimer);
+  driveSaveTimer = setTimeout(driveSave, 400);
+}
+
+function driveSave() {
+  if (!DRIVE || !hasChanges) return;
+  setSyncing(true);
+  // Si el archivo cambió en Drive desde la última lectura (p.ej. desde el PC),
+  // hacemos merge: leemos la versión nueva y le sobreponemos nuestro db.
+  const current = DRIVE.read();
+  if (current && !isErr(current) && current !== driveText) {
+    // Hay versión nueva en Drive: fusionar manteniendo nuestros datos como autoridad
+    // (el PC actualiza masivamente; el móvil hace cambios puntuales)
+    try {
+      const fresh = JSON.parse(current);
+      // Preservar cambios del móvil sobre la versión fresca del PC
+      db = Object.assign(fresh, {
+        computers: db.computers,
+        floors: db.floors,
+        notesHistory: db.notesHistory,
+        staff: db.staff,
+        manuals: db.manuals,
+        phones: db.phones,
+        dgpDevices: db.dgpDevices,
+        floorImages: db.floorImages
+      });
+    } catch(e) { /* remoto ilegible: usar nuestro db */ }
+  }
+  const out = JSON.stringify(db, null, 2);
+  const res = DRIVE.write(out);
+  if (isErr(res)) {
+    setSyncing(false);
+    updateTopbar();
+    alert('No se pudo guardar en Drive:\n' + res + '\n\nLos cambios siguen en el móvil. Pulsa ⬆ Guardar para reintentar.');
+    return;
+  }
+  driveText = out;
+  hasChanges = false;
+  lastSync = new Date();
+  try { localStorage.setItem(CACHE_KEY, out); } catch (e) {}
+  setSyncing(false);
+  toast('Guardado en Drive ✓');
+  updateTopbar();
+}
+
+window.onDriveFilePicked = function (ok) {
+  if (!ok) { setSplashStatus('No se seleccionó ningún archivo'); return; }
+  driveText = null;
+  setSplashStatus('Leyendo Drive…');
+  if (driveLoad(false)) toast('Vinculado: ' + (driveFileName || 'datos_ti.json'));
+  else { showManualOption(); setSplashStatus('⚠ No se pudo leer el archivo seleccionado'); }
+};
+
+function relinkDrive() {
+  if (hasChanges && !confirm('Hay cambios sin guardar. Si vinculas otro archivo se perderán. ¿Continuar?')) return;
+  DRIVE.pick();
+}
+
+function initDrive() {
+  const p = document.querySelector('#splash-manual p');
+  if (p) p.textContent = 'Selecciona datos_ti.json en Google Drive (menú ☰ del selector → Drive). Solo hay que hacerlo una vez.';
+  const b = document.getElementById('splash-load');
+  b.textContent = '🔗 Vincular datos_ti.json de Drive';
+  b.onclick = () => DRIVE.pick();
+  // Añadir botón re-vincular en topbar
+  const lb = document.createElement('button');
+  lb.className = 'tbtn';
+  lb.textContent = '🔗';
+  lb.title = 'Vincular otro archivo Drive';
+  lb.onclick = relinkDrive;
+  const topBtns = document.querySelector('.top-btns');
+  if (topBtns) topBtns.prepend(lb);
+  // Cambiar botón exportar por "Guardar en Drive"
+  const exp = document.getElementById('export-btn');
+  if (exp) { exp.textContent = '⬆ Guardar'; exp.onclick = driveSave; }
+
+  if (DRIVE.hasFile()) {
+    setSplashStatus('Leyendo Drive…');
+    if (driveLoad(false)) return;
+    // Fallback a caché
+    try {
+      const c = localStorage.getItem(CACHE_KEY);
+      if (c) { loadData(JSON.parse(c)); toast('⚠ Sin acceso a Drive: mostrando última copia local'); return; }
+    } catch (e) {}
+    setSplashStatus('⚠ No se pudo leer el archivo vinculado');
+  }
+  showManualOption();
+}
+
+// Al volver a la app, recargar Drive si no hay cambios pendientes
+document.addEventListener('visibilitychange', () => {
+  if (DRIVE && document.visibilityState === 'visible' && !hasChanges && DRIVE.hasFile()) {
+    driveLoad(true);
+  }
+});
+// ────────────────────────────────────────────────────────────────────
+
+/* ── SYNC CON DRIVE (URL) ── */
 async function syncFromDrive(silent) {
   if (!SYNC_URL) return false;
   const btn = document.getElementById('sync-btn');
@@ -307,7 +453,10 @@ async function syncFromDrive(silent) {
 }
 
 async function manualSync() {
-  if (SYNC_URL) {
+  if (DRIVE) {
+    if (hasChanges) { driveSave(); }
+    else { const ok = driveLoad(false); if (!ok) toast('No se pudo actualizar desde Drive'); else toast('Actualizado desde Drive ✓'); }
+  } else if (SYNC_URL) {
     const ok = await syncFromDrive(false);
     if (!ok) alert('No se pudo sincronizar con Drive. Comprueba la conexión o carga el JSON manualmente.');
   } else {
@@ -329,6 +478,12 @@ function loadData(data) {
 }
 
 async function initApp() {
+  // 0. Si la APK tiene puente nativo AndroidDrive, usarlo directamente
+  if (DRIVE) {
+    initDrive();
+    return;
+  }
+
   // 1. Intentar caché localStorage (instantáneo, sin espera)
   try {
     const cached = localStorage.getItem(CACHE_KEY);
@@ -393,19 +548,26 @@ document.getElementById('file-input2').addEventListener('change', e => { loadFil
 
 function updateTopbar() {
   const timeStr = lastSync ? lastSync.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) : null;
-  const syncPart = timeStr ? `Sync ${timeStr} · ` : '';
+  const driveLabel = DRIVE ? 'Drive' : 'Sync';
+  const syncPart = timeStr ? `${driveLabel} ${timeStr} · ` : '';
   document.getElementById('topbar-sub').textContent = `${syncPart}${db.computers.length} PCs · ${db.staff.length} personas · ${(db.dgpDevices||[]).length} DGP`;
-  document.getElementById('export-btn').style.display = hasChanges ? 'block' : 'block';
-  document.getElementById('topbar-title').innerHTML = '🖥️ TI Móvil' + (hasChanges ? '<span class="changed-dot" title="Cambios sin exportar"></span>' : '');
+  if (DRIVE) {
+    document.getElementById('export-btn').style.display = hasChanges ? 'block' : 'none';
+  } else {
+    document.getElementById('export-btn').style.display = 'block';
+  }
+  document.getElementById('topbar-title').innerHTML = '🖥️ TI Móvil' + (hasChanges ? '<span class="changed-dot" title="Cambios sin guardar"></span>' : '');
 }
 
 function markChanged() {
   hasChanges = true;
   updateTopbar();
+  if (DRIVE) scheduleDriveSave();
 }
 
-/* ── EXPORT ── */
+/* ── EXPORT / SAVE ── */
 function exportJSON() {
+  if (DRIVE) { driveSave(); return; }
   const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
