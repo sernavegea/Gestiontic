@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="TI Móvil">
-<meta name="theme-color" content="#0a0f1e">
+<meta name="theme-color" content="#0f1117">
 <title>TI Móvil</title>
 <script>
 // Genera iconos PNG via canvas y construye el manifest dinámicamente
@@ -25,15 +25,24 @@
     ctx.lineTo(r, size); ctx.quadraticCurveTo(0, size, 0, size - r);
     ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
     ctx.closePath();
-    ctx.fillStyle = '#0a0f1e';
+    ctx.fillStyle = '#0f1117';
     ctx.fill();
-    ctx.strokeStyle = '#d4af37';
+    ctx.strokeStyle = '#4f7fff';
     ctx.lineWidth = size * 0.04;
     ctx.stroke();
-    ctx.font = size * 0.55 + 'px serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('\uD83D\uDDA5\uFE0F', size / 2, size / 2 + size * 0.03);
+    // Monitor icon drawn with canvas
+    const p = size * 0.18;
+    ctx.strokeStyle = '#4f7fff';
+    ctx.lineWidth = size * 0.055;
+    ctx.strokeRect(p, p, size - p*2, size * 0.5);
+    ctx.beginPath();
+    ctx.moveTo(size*0.37, size*0.68);
+    ctx.lineTo(size*0.3, size*0.82);
+    ctx.moveTo(size*0.63, size*0.68);
+    ctx.lineTo(size*0.7, size*0.82);
+    ctx.moveTo(size*0.25, size*0.82);
+    ctx.lineTo(size*0.75, size*0.82);
+    ctx.stroke();
     return c.toDataURL('image/png');
   }
 
@@ -87,143 +96,150 @@
 })();
 </script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Syne:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 :root {
-  --bg:#0a0f1e; --bg2:#111827; --bg3:#1a2235; --border:#1e2d45;
-  --gold:#d4af37; --gold2:#f0d060; --blue:#3b82f6; --green:#22c55e;
-  --red:#ef4444; --amber:#f59e0b; --text:#e2e8f0; --muted:#64748b;
-  --card-r:14px;
+  --bg:#0f1117; --bg2:#181c25; --bg3:#1f2333; --border:#2a2f3d;
+  --accent:#4f7fff; --accent2:#6b93ff; --blue:#4f7fff; --green:#34c97a;
+  --red:#f04f5a; --amber:#f5a623; --text:#dde3ef; --muted:#5c6478;
+  --card-r:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;}
 #app{display:flex;flex-direction:column;height:100vh;height:100dvh;}
-#topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:12px 16px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding-top:calc(12px + env(safe-area-inset-top,0px));}
-#topbar-title{font-size:17px;font-weight:800;letter-spacing:-.3px;color:var(--gold);}
-#topbar-sub{font-size:10px;color:var(--muted);margin-top:1px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 120px);}
+#topbar{background:var(--bg);border-bottom:1px solid var(--border);padding:10px 14px 9px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding-top:calc(10px + env(safe-area-inset-top,0px));}
+#topbar-title{font-size:15px;font-weight:700;letter-spacing:.01em;color:var(--text);}
+#topbar-sub{font-size:10px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100vw - 130px);}
 .top-btns{display:flex;gap:6px;}
-.tbtn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;}
-.tbtn.gold{background:var(--gold);color:#0a0f1e;border-color:var(--gold);}
+.tbtn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;}
+.tbtn.gold{background:var(--accent);color:#fff;border-color:var(--accent);}
 #content{flex:1;overflow:hidden;display:flex;flex-direction:column;}
-#navbar{display:flex;background:var(--bg2);border-top:1px solid var(--border);padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+#navbar{display:flex;background:var(--bg);border-top:1px solid var(--border);padding-bottom:calc(4px + env(safe-area-inset-bottom,0px));flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
 #navbar::-webkit-scrollbar{display:none;}
-.nav-item{flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px 4px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Syne',sans-serif;transition:color .15s;position:relative;}
-.nav-item.active{color:var(--gold);}
-.nav-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px;}
-/* Landscape: topbar y nav más compactos */
-@media (orientation:landscape) {
-  #topbar{padding:5px 16px 5px;padding-top:calc(5px + env(safe-area-inset-top,0px));}
+.nav-item{flex:1;min-width:50px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 4px 3px;cursor:pointer;border:none;background:none;color:var(--muted);font-family:'Inter',sans-serif;transition:color .15s;position:relative;}
+.nav-item.active{color:var(--accent);}
+.nav-item.active::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:2px;background:var(--accent);border-radius:0 0 2px 2px;}
+/* Landscape */
+@media (orientation:landscape){
+  #topbar{padding:4px 14px;padding-top:calc(4px + env(safe-area-inset-top,0px));}
   #topbar-sub{display:none;}
-  #topbar-title{font-size:14px;}
-  .top-btns .tbtn{padding:5px 8px;font-size:11px;}
+  #topbar-title{font-size:13px;}
+  .top-btns .tbtn{padding:4px 8px;font-size:11px;}
   #navbar{padding-bottom:calc(2px + env(safe-area-inset-bottom,0px));}
   .nav-item{padding:4px 4px 2px;}
   .nav-label{display:none;}
-  .nav-icon{font-size:18px;}
+  .nav-icon svg{width:18px;height:18px;}
   .nav-item.active::after{top:0;}
 }
-/* Mapa en pantalla completa */
-body.map-fullscreen #topbar,
-body.map-fullscreen #navbar{display:none!important;}
+/* Mapa pantalla completa */
+body.map-fullscreen #topbar,body.map-fullscreen #navbar{display:none!important;}
 body.map-fullscreen #floor-tabs{padding-top:calc(10px + env(safe-area-inset-top,0px));}
-#map-fs-btn{position:absolute;bottom:10px;right:10px;z-index:30;background:rgba(10,15,30,.75);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:16px;padding:5px 8px;cursor:pointer;backdrop-filter:blur(4px);}
-.nav-icon{font-size:20px;line-height:1;}
-.nav-label{font-size:10px;font-weight:600;letter-spacing:.03em;white-space:nowrap;}
+.nav-icon{display:flex;align-items:center;justify-content:center;line-height:1;}
+.nav-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.nav-label{font-size:9px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
 .tab{display:none;flex:1;overflow-y:auto;padding:12px;flex-direction:column;gap:10px;}
 .tab.active{display:flex;}
 .tab::-webkit-scrollbar{width:3px;}.tab::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
 .search-wrap{position:relative;flex-shrink:0;}
-.search-wrap input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 14px 11px 38px;font-size:15px;color:var(--text);font-family:'Syne',sans-serif;outline:none;}
+.search-wrap input{width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:9px 12px 9px 34px;font-size:14px;color:var(--text);font-family:'Inter',sans-serif;outline:none;}
 .search-wrap input::placeholder{color:var(--muted);}
-.search-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;}
-.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:14px 16px;}
+.search-wrap::before{content:'';position:absolute;left:11px;top:50%;transform:translateY(-50%);width:14px;height:14px;background:var(--muted);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:12px 14px;}
 .card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;}
-.card-title{font-size:15px;font-weight:700;line-height:1.3;}
+.card-title{font-size:14px;font-weight:600;line-height:1.3;}
 .card-sub{font-size:12px;color:var(--muted);margin-top:2px;}
-.pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
-.pill-gold{background:rgba(212,175,55,.15);color:var(--gold);}
-.pill-green{background:rgba(34,197,94,.15);color:var(--green);}
-.pill-red{background:rgba(239,68,68,.15);color:var(--red);}
-.pill-blue{background:rgba(59,130,246,.15);color:var(--blue);}
-.pill-amber{background:rgba(245,158,11,.15);color:var(--amber);}
-.pill-gray{background:rgba(100,116,139,.15);color:var(--muted);}
+.pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;}
+.pill-gold{background:rgba(79,127,255,.15);color:var(--accent2);}
+.pill-green{background:rgba(52,201,122,.12);color:var(--green);}
+.pill-red{background:rgba(240,79,90,.12);color:var(--red);}
+.pill-blue{background:rgba(79,127,255,.15);color:var(--blue);}
+.pill-amber{background:rgba(245,166,35,.12);color:var(--amber);}
+.pill-gray{background:rgba(92,100,120,.2);color:var(--muted);}
 .info-row{display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:13px;}
 .info-row:last-child{border-bottom:none;}
-.info-label{color:var(--muted);min-width:72px;font-size:12px;padding-top:1px;}
+.info-label{color:var(--muted);min-width:72px;font-size:11px;padding-top:1px;text-transform:uppercase;letter-spacing:.04em;}
 .info-val{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);word-break:break-all;}
-.info-val.plain{font-family:'Syne',sans-serif;font-size:13px;}
-.section-header{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;padding:4px 0 8px;}
-.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:12px;color:var(--muted);text-align:center;}
-.empty-icon{font-size:44px;}
-.empty-title{font-size:16px;font-weight:700;color:var(--text);}
+.info-val.plain{font-family:'Inter',sans-serif;font-size:13px;}
+.section-header{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;padding:4px 0 8px;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 20px;gap:10px;color:var(--muted);text-align:center;}
+.empty-icon{font-size:36px;opacity:.5;}
+.empty-title{font-size:15px;font-weight:600;color:var(--text);}
 .empty-sub{font-size:13px;line-height:1.6;}
 .stats-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;}
-.stat-num{font-size:18px;font-weight:800;color:var(--gold);}
-.stat-label{font-size:10px;color:var(--muted);margin-top:1px;}
-.note-card{background:var(--bg3);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 14px;}
-.note-date{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
-.note-title{font-size:14px;font-weight:700;margin-bottom:4px;}
-.note-body{font-size:13px;color:var(--muted);line-height:1.5;}
-.collapse-btn{width:100%;background:none;border:none;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;}
-.collapse-btn .arrow{color:var(--muted);transition:transform .2s;font-size:12px;}
+.stat-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:10px;text-align:center;}
+.stat-num{font-size:20px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.stat-label{font-size:9px;font-weight:600;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em;}
+.note-card{background:var(--bg3);border-left:2px solid var(--accent);border-radius:0 var(--card-r) var(--card-r) 0;padding:9px 12px;}
+.note-date{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.note-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.note-body{font-size:12px;color:var(--muted);line-height:1.5;}
+.collapse-btn{width:100%;background:none;border:none;color:var(--text);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:0;}
+.collapse-btn .arrow{color:var(--muted);transition:transform .2s;font-size:11px;}
 .collapse-btn.open .arrow{transform:rotate(180deg);}
 .collapse-body{overflow:hidden;}
-.map-container{position:relative;border-radius:10px;overflow:hidden;background:var(--bg3);min-height:200px;touch-action:none;}
+.map-container{position:relative;border-radius:var(--card-r);overflow:hidden;background:var(--bg3);min-height:200px;touch-action:none;}
 .map-container img{width:100%;height:auto;display:block;user-select:none;-webkit-user-drag:none;}
 .map-inner{position:relative;transform-origin:0 0;will-change:transform;}
-.map-marker{position:absolute;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--bg);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:6px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4);z-index:5;}
-.map-tooltip{position:absolute;background:var(--bg2);border:1px solid var(--gold);border-radius:8px;padding:7px 10px;font-size:11px;z-index:20;min-width:140px;max-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;}
+.map-marker{position:absolute;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--bg2);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:6px;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.5);z-index:5;}
+.map-tooltip{position:absolute;background:var(--bg2);border:1px solid var(--border);border-radius:var(--card-r);padding:7px 10px;font-size:11px;z-index:20;min-width:140px;max-width:200px;box-shadow:0 8px 24px rgba(0,0,0,.6);pointer-events:none;}
 /* FAB */
-.fab{position:fixed;bottom:calc(70px + env(safe-area-inset-bottom,0px));right:16px;width:52px;height:52px;border-radius:50%;background:var(--gold);color:#0a0f1e;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 16px rgba(212,175,55,.4);display:flex;align-items:center;justify-content:center;z-index:50;font-weight:900;}
+.fab{position:fixed;bottom:calc(66px + env(safe-area-inset-bottom,0px));right:16px;width:48px;height:48px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:22px;cursor:pointer;box-shadow:0 4px 16px rgba(79,127,255,.35);display:flex;align-items:center;justify-content:center;z-index:50;font-weight:700;}
 /* MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;}
-.modal{background:var(--bg2);border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 16px calc(20px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;}
-.modal-title{font-size:18px;font-weight:800;color:var(--gold);}
-.modal label{font-size:13px;color:var(--muted);font-weight:600;display:block;margin-bottom:5px;}
-.modal input,.modal select,.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 13px;font-size:15px;color:var(--text);font-family:'Syne',sans-serif;outline:none;}
-.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--gold);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;}
+.modal{background:var(--bg2);border-radius:14px 14px 0 0;border-top:1px solid var(--border);width:100%;max-height:90vh;overflow-y:auto;padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:14px;}
+.modal-title{font-size:16px;font-weight:700;color:var(--text);}
+.modal label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:5px;}
+.modal input,.modal select,.modal textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--card-r);padding:10px 12px;font-size:14px;color:var(--text);font-family:'Inter',sans-serif;outline:none;}
+.modal input:focus,.modal select:focus,.modal textarea:focus{border-color:var(--accent);}
 .modal textarea{resize:vertical;min-height:90px;line-height:1.5;}
-.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;}
-.btn-save{background:var(--gold);color:#0a0f1e;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;font-family:'Syne',sans-serif;cursor:pointer;}
-.btn-cancel{background:var(--bg3);color:var(--muted);border:1px solid var(--border);border-radius:10px;padding:13px;font-size:15px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;}
-.btn-del{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;}
-.edit-btn{background:var(--bg3);color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;}
-#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:100;}
-#splash h1{font-size:32px;font-weight:800;color:var(--gold);}
-#splash p{font-size:14px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;}
-#splash-load{background:var(--gold);color:#0a0f1e;border:none;border-radius:12px;padding:14px 32px;font-size:16px;font-weight:800;font-family:'Syne',sans-serif;cursor:pointer;margin-top:8px;}
-#splash-status{font-size:13px;color:var(--amber);font-family:'JetBrains Mono',monospace;min-height:20px;text-align:center;}
+.modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.btn-save{background:var(--accent);color:#fff;border:none;border-radius:var(--card-r);padding:12px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;}
+.btn-cancel{background:var(--bg3);color:var(--muted);border:1px solid var(--border);border-radius:var(--card-r);padding:12px;font-size:14px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;}
+.btn-del{background:rgba(240,79,90,.12);color:var(--red);border:1px solid rgba(240,79,90,.25);border-radius:6px;padding:6px 11px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;}
+.edit-btn{background:var(--bg3);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:100;}
+#splash h1{font-size:26px;font-weight:700;color:var(--text);letter-spacing:-.02em;}
+#splash p{font-size:13px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;}
+#splash-load{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;margin-top:8px;}
+#splash-status{font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;min-height:18px;text-align:center;}
 #splash-manual{margin-top:4px;display:none;flex-direction:column;align-items:center;gap:10px;}
-.logo{font-size:64px;}
+.logo{font-size:52px;opacity:.8;}
 input[type=file]{display:none;}
-.changed-dot{width:8px;height:8px;border-radius:50%;background:var(--amber);display:inline-block;margin-left:6px;vertical-align:middle;}
-.sync-btn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;white-space:nowrap;}
+.changed-dot{width:6px;height:6px;border-radius:50%;background:var(--amber);display:inline-block;margin-left:5px;vertical-align:middle;}
+.sync-btn{background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap;}
 .sync-btn.syncing{color:var(--amber);border-color:var(--amber);}
 </style>
 </head>
 <body>
 
 <div id="splash">
-  <div class="logo">🖥️</div>
+  <div class="logo">
+    <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="8" width="44" height="28" rx="4" stroke="#4f7fff" stroke-width="2.5" fill="none"/>
+      <line x1="18" y1="36" x2="14" y2="44" stroke="#4f7fff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="34" y1="36" x2="38" y2="44" stroke="#4f7fff" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="12" y1="44" x2="40" y2="44" stroke="#4f7fff" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="26" cy="22" r="6" stroke="#4f7fff" stroke-width="2" fill="none"/>
+    </svg>
+  </div>
   <h1>TI Móvil</h1>
   <div id="splash-status"></div>
   <div id="splash-manual">
-    <p style="font-size:14px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;">Carga el archivo JSON de la app de escritorio para ver los datos.</p>
+    <p style="font-size:13px;color:var(--muted);text-align:center;max-width:260px;line-height:1.6;">Carga el archivo JSON de la aplicación de escritorio para acceder a los datos.</p>
     <input type="file" id="file-input" accept=".json">
-    <button id="splash-load" onclick="document.getElementById('file-input').click()">📂 Cargar archivo JSON</button>
+    <button id="splash-load" onclick="document.getElementById('file-input').click()">Cargar archivo JSON</button>
   </div>
 </div>
 
 <div id="app" style="display:none;">
   <div id="topbar">
     <div>
-      <div id="topbar-title">🖥️ TI Móvil</div>
+      <div id="topbar-title">TI Móvil</div>
       <div id="topbar-sub">Sin datos</div>
     </div>
     <div class="top-btns">
       <input type="file" id="file-input2" accept=".json">
       <button class="tbtn sync-btn" id="sync-btn" onclick="manualSync()">↻</button>
-      <button class="tbtn gold" id="export-btn" onclick="exportJSON()" style="display:none;">⬇ Exportar</button>
+      <button class="tbtn gold" id="export-btn" onclick="exportJSON()" style="display:none;">Exportar</button>
     </div>
   </div>
 
@@ -260,13 +276,34 @@ input[type=file]{display:none;}
   </div>
 
   <nav id="navbar">
-    <button class="nav-item active" onclick="switchTab('pcs',this)"><span class="nav-icon">🖥️</span><span class="nav-label">PCs</span></button>
-    <button class="nav-item" onclick="switchTab('personal',this)"><span class="nav-icon">👥</span><span class="nav-label">Personal</span></button>
-    <button class="nav-item" onclick="switchTab('map',this)"><span class="nav-icon">🗺️</span><span class="nav-label">Ubic.</span></button>
-    <button class="nav-item" onclick="switchTab('phones',this)"><span class="nav-icon">📞</span><span class="nav-label">Teléfonos</span></button>
-    <button class="nav-item" onclick="switchTab('manuals',this)"><span class="nav-icon">📚</span><span class="nav-label">Manuales</span></button>
-    <button class="nav-item" onclick="switchTab('diary',this)"><span class="nav-icon">📓</span><span class="nav-label">Diario</span></button>
-    <button class="nav-item" onclick="switchTab('dgp',this)"><span class="nav-icon">🔐</span><span class="nav-label">DGP</span></button>
+    <button class="nav-item active" onclick="switchTab('pcs',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="17" x2="6" y2="21"/><line x1="16" y1="17" x2="18" y2="21"/><line x1="5" y1="21" x2="19" y2="21"/></svg></span>
+      <span class="nav-label">PCs</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('personal',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M19 8v6m-3-3h6" stroke-width="1.7"/></svg></span>
+      <span class="nav-label">Personal</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('map',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></span>
+      <span class="nav-label">Ubic.</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('phones',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.42 2 2 0 0 1 3.59 1.25h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.81a16 16 0 0 0 6 6l.91-.91a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 16.92z"/></svg></span>
+      <span class="nav-label">Telef.</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('manuals',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></span>
+      <span class="nav-label">Manuales</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('diary',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+      <span class="nav-label">Diario</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('dgp',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+      <span class="nav-label">DGP</span>
+    </button>
   </nav>
 </div>
 
@@ -319,7 +356,7 @@ function toast(msg) {
   if (!t) {
     t = document.createElement('div');
     t.id = 'toast';
-    t.style.cssText = 'position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bg3);color:var(--text);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;font-size:13px;z-index:300;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);transition:opacity .3s;';
+    t.style.cssText = 'position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--bg3);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 14px;font-size:12px;z-index:300;max-width:90%;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.5);transition:opacity .3s;';
     document.body.appendChild(t);
   }
   t.textContent = msg;
@@ -574,7 +611,7 @@ function updateTopbar() {
   } else {
     document.getElementById('export-btn').style.display = 'block';
   }
-  document.getElementById('topbar-title').innerHTML = '🖥️ TI Móvil' + (hasChanges ? '<span class="changed-dot" title="Cambios sin guardar"></span>' : '');
+  document.getElementById('topbar-title').innerHTML = 'TI Móvil' + (hasChanges ? '<span class="changed-dot" title="Cambios sin guardar"></span>' : '');
 }
 
 function markChanged() {
@@ -669,14 +706,13 @@ function renderPcs() {
     html += `<div class="section-header">${gname} (${pcs.length})</div>`;
     pcs.forEach(pc => {
       const isPrinter = pc.deviceType === 'printer';
-      const icon = isPrinter ? '🖨️' : '🖥️';
       const users = pc.users || [];
       html += `<div class="card" style="margin-bottom:8px;">
         <div class="card-header">
-          <div><div class="card-title">${icon} ${pc.name||'Sin nombre'}</div>${pc.assignedTo?`<div class="card-sub">👤 ${pc.assignedTo}</div>`:''}</div>
+          <div><div class="card-title">${isPrinter?'Impresora':'PC'} · ${pc.name||'Sin nombre'}</div>${pc.assignedTo?`<div class="card-sub">${pc.assignedTo}</div>`:''}</div>
           <div style="display:flex;gap:6px;align-items:center;">
             ${isPrinter?'<span class="pill pill-amber">Impresora</span>':''}
-            <button class="edit-btn" onclick="openModalPC('${pc.id}')">✏️</button>
+            <button class="edit-btn" onclick="openModalPC('${pc.id}')">Editar</button>
           </div>
         </div>
         ${pc.ip?`<div class="info-row"><span class="info-label">IP</span><span class="info-val">${pc.ip}</span></div>`:''}
@@ -685,8 +721,8 @@ function renderPcs() {
         ${pc.model?`<div class="info-row"><span class="info-label">Modelo</span><span class="info-val plain">${pc.model}</span></div>`:''}
         ${pc.os?`<div class="info-row"><span class="info-label">SO</span><span class="info-val plain">${pc.os}</span></div>`:''}
         ${pc.deliveryDate?`<div class="info-row"><span class="info-label">Entrega</span><span class="info-val plain">${pc.deliveryDate}</span></div>`:''}
-        ${users.length?`<div class="info-row"><span class="info-label">Usuarios</span><span class="info-val plain" style="display:flex;flex-wrap:wrap;gap:4px;">${users.map(u=>`<span class="pill pill-blue">👤 ${u.username}${u.password?' · '+u.password:''}</span>`).join('')}</span></div>`:''}
-        ${pc.notes?`<div class="info-row"><span class="info-label">Notas</span><span class="info-val plain" style="color:var(--gold)">${pc.notes}</span></div>`:''}
+        ${users.length?`<div class="info-row"><span class="info-label">Usuarios</span><span class="info-val plain" style="display:flex;flex-wrap:wrap;gap:4px;">${users.map(u=>`<span class="pill pill-blue">${u.username}${u.password?' · '+u.password:''}</span>`).join('')}</span></div>`:''}
+        ${pc.notes?`<div class="info-row"><span class="info-label">Notas</span><span class="info-val plain" style="color:var(--muted)">${pc.notes}</span></div>`:''}
       </div>`;
     });
   });
@@ -699,7 +735,7 @@ function openModalPC(id) {
   const groupOpts = ['Sin grupo',...groups].map(g=>`<option${pc&&pc.groupName===g?' selected':''}>${g}</option>`).join('');
   openModal(pc?'Editar PC':'Nuevo PC', `
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${pc?`<button class="btn-del" onclick="deletePC('${pc.id}')">🗑️ Eliminar PC</button>`:''}
+      ${pc?`<button class="btn-del" onclick="deletePC('${pc.id}')">Eliminar PC</button>`:''}
       <div><label>Nombre</label><input id="m-name" value="${pc?.name||''}"></div>
       <div><label>IP</label><input id="m-ip" value="${pc?.ip||''}" inputmode="decimal"></div>
       <div><label>MAC</label><input id="m-mac" value="${pc?.mac||''}"></div>
@@ -723,7 +759,7 @@ function deletePC(id) {
 function renderStaff() {
   const q = (document.getElementById('search-staff').value||'').toLowerCase();
   const list = db.staff.filter(p=>!q||[p.nombre,p.apellidos,p.placa,p.dni,p.telefono,p.categoria].some(v=>v&&v.toLowerCase().includes(q)));
-  if (!list.length) { document.getElementById('list-staff').innerHTML=`<div class="empty"><div class="empty-icon">👥</div><div class="empty-title">${db.staff.length?'Sin resultados':'Sin personal'}</div></div>`; return; }
+  if (!list.length) { document.getElementById('list-staff').innerHTML=`<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">${db.staff.length?'Sin resultados':'Sin personal'}</div></div>`; return; }
   const cats = {};
   list.forEach(p=>{ const c=p.categoria||'Sin categoría'; if(!cats[c])cats[c]=[]; cats[c].push(p); });
   let html='';
@@ -733,7 +769,7 @@ function renderStaff() {
       html+=`<div class="card" style="margin-bottom:8px;">
         <div class="card-header">
           <div><div class="card-title">${p.apellidos||''} ${p.nombre||''}</div>${p.placa?`<div class="card-sub">🔖 ${p.placa}</div>`:''}</div>
-          <div style="display:flex;gap:6px;align-items:center;">${p.dni?`<span class="pill pill-gray">${p.dni}</span>`:''}<button class="edit-btn" onclick="openModalStaff('${p.id}')">✏️</button></div>
+          <div style="display:flex;gap:6px;align-items:center;">${p.dni?`<span class="pill pill-gray">${p.dni}</span>`:''}<button class="edit-btn" onclick="openModalStaff('${p.id}')"> Editar</button></div>
         </div>
         ${p.telefono?`<div class="info-row"><span class="info-label">Teléfono</span><span class="info-val">${p.telefono}</span></div>`:''}
       </div>`;
@@ -747,7 +783,7 @@ function openModalStaff(id) {
   const catOpts = ['Sin categoría',...cats].map(c=>`<option${p&&p.categoria===c?' selected':''}>${c}</option>`).join('');
   openModal(p?'Editar persona':'Nueva persona',`
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${p?`<button class="btn-del" onclick="deleteStaff('${p.id}')">🗑️ Eliminar persona</button>`:''}
+      ${p?`<button class="btn-del" onclick="deleteStaff('${p.id}')">Eliminar persona</button>`:''}
       <div><label>Nombre</label><input id="m-nombre" value="${p?.nombre||''}"></div>
       <div><label>Apellidos</label><input id="m-apellidos" value="${p?.apellidos||''}"></div>
       <div><label>DNI</label><input id="m-dni" value="${p?.dni||''}"></div>
@@ -775,7 +811,7 @@ function renderPhones() {
     p.puesto, p.telefono, p.telefonoCorto, p.camino
   ].some(v=>v&&String(v).toLowerCase().includes(q)));
   if (!list.length) {
-    document.getElementById('list-phones').innerHTML='<div class="empty"><div class="empty-icon">📞</div><div class="empty-title">'+(db.phones&&db.phones.length?'Sin resultados':'Sin teléfonos')+'</div></div>';
+    document.getElementById('list-phones').innerHTML='<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">'+(db.phones&&db.phones.length?'Sin resultados':'Sin teléfonos')+'</div></div>';
     return;
   }
   const shown = list.slice(0, 200);
@@ -792,12 +828,12 @@ function renderPhones() {
       +(dept?'<div class="card-sub" style="font-size:11px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+dept+'</div>':'')
       +'</div>'
       +'<div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">'
-      +(ext?'<span class="pill pill-blue" style="font-family:JetBrains Mono,monospace">✂️ '+ext+'</span>':'')
-      +'<button class="edit-btn" onclick="openModalPhone(\''+p.id+'\')">✏️</button>'
+      +(ext?'<span class="pill pill-blue" style="font-family:\'JetBrains Mono\',monospace">'+ext+'</span>':'')
+      +'<button class="edit-btn" onclick="openModalPhone(\''+p.id+'\')">Editar</button>'
       +'</div></div>'
       +(telFull?'<div class="info-row"><span class="info-label">Teléfono</span><span class="info-val">'+telFull+'</span></div>':'')
       +(loc?'<div class="info-row"><span class="info-label">Ubicación</span><span class="info-val plain">'+loc+'</span></div>':'')
-      +(notas?'<div class="info-row"><span class="info-label">Notas</span><span class="info-val plain" style="color:var(--gold)">'+notas+'</span></div>':'')
+      +(notas?'<div class="info-row"><span class="info-label">Notas</span><span class="info-val plain" style="color:var(--muted)">'+notas+'</span></div>':'')
       +'</div>';
   }).join('');
   if (list.length > 200) html += '<div style="text-align:center;padding:12px;font-size:13px;color:var(--muted)">Mostrando 200 de '+list.length+'. Usa el buscador para filtrar.</div>';
@@ -807,7 +843,7 @@ function openModalPhone(id) {
   const p = id ? db.phones.find(x=>x.id===id) : null;
   openModal(p?'Editar teléfono':'Nuevo teléfono',`
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${p?`<button class="btn-del" onclick="deletePhone('${p.id}')">🗑️ Eliminar</button>`:''}
+      ${p?`<button class="btn-del" onclick="deletePhone('${p.id}')">Eliminar</button>`:''}
       <div><label>Nombre / descripción</label><input id="m-name" value="${p?.name||''}"></div>
       <div><label>Extensión</label><input id="m-ext" value="${p?.extension||''}" inputmode="numeric"></div>
       <div><label>Departamento</label><input id="m-dept" value="${p?.department||''}"></div>
@@ -825,14 +861,14 @@ function deletePhone(id) {
 function renderManuals() {
   const q = (document.getElementById('search-manuals').value||'').toLowerCase();
   const list = (db.manuals||[]).filter(m=>!q||[m.title,m.category,m.content,m.tags].some(v=>v&&v.toLowerCase().includes(q)));
-  if (!list.length) { document.getElementById('list-manuals').innerHTML=`<div class="empty"><div class="empty-icon">📚</div><div class="empty-title">${db.manuals?.length?'Sin resultados':'Sin manuales'}</div></div>`; return; }
+  if (!list.length) { document.getElementById('list-manuals').innerHTML=`<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">${db.manuals?.length?'Sin resultados':'Sin manuales'}</div></div>`; return; }
   document.getElementById('list-manuals').innerHTML=list.map((m,i)=>`
     <div class="card" style="margin-bottom:8px;">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
         <button class="collapse-btn" id="mb-${i}" onclick="toggleCollapse('mb-${i}','mc-${i}')">
           <span style="text-align:left;">${m.title||'Sin título'}</span><span class="arrow">▼</span>
         </button>
-        <button class="edit-btn" onclick="openModalManual('${m.id}')">✏️</button>
+        <button class="edit-btn" onclick="openModalManual('${m.id}')"> Editar</button>
       </div>
       <div class="collapse-body" id="mc-${i}" style="max-height:0;transition:max-height .25s ease;">
         <div style="padding-top:12px;">
@@ -847,7 +883,7 @@ function openModalManual(id) {
   const m = id ? db.manuals.find(x=>x.id===id) : null;
   openModal(m?'Editar manual':'Nuevo manual',`
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${m?`<button class="btn-del" onclick="deleteManual('${m.id}')">🗑️ Eliminar</button>`:''}
+      ${m?`<button class="btn-del" onclick="deleteManual('${m.id}')">Eliminar</button>`:''}
       <div><label>Título</label><input id="m-title" value="${m?.title||''}"></div>
       <div><label>Categoría</label><input id="m-cat" value="${m?.category||''}"></div>
       <div><label>Etiquetas</label><input id="m-tags" value="${m?.tags||''}"></div>
@@ -894,17 +930,17 @@ function renderDiary() {
       return b.i - a.i;                // mismo timestamp → el que está más abajo en el array (más nuevo) va primero
     })
     .map(({n})=>n);
-  if (!list.length) { document.getElementById('list-diary').innerHTML='<div class="empty"><div class="empty-icon">📓</div><div class="empty-title">'+(db.notesHistory&&db.notesHistory.length?'Sin resultados':'Sin entradas')+'</div></div>'; return; }
+  if (!list.length) { document.getElementById('list-diary').innerHTML='<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">'+(db.notesHistory&&db.notesHistory.length?'Sin resultados':'Sin entradas')+'</div></div>'; return; }
   document.getElementById('list-diary').innerHTML=list.map(function(n){
     const titulo  = n.title || n.text || 'Sin título';
     const tecnico = n.technician || n.author || '';
     const cuerpo  = n.content || (n.title ? n.text : '');
     const urgente = n.isUrgent;
     return '<div class="note-card" style="margin-bottom:8px;position:relative;'+(urgente?'border-left-color:var(--red)':'')+'">'+
-      '<button class="edit-btn" style="position:absolute;top:8px;right:8px;" onclick="openModalDiary(\''+n.id+'\')">✏️</button>'+
+      '<button class="edit-btn" style="position:absolute;top:8px;right:8px;" onclick="openModalDiary(\''+n.id+'\')">Editar</button>'+
       '<div class="note-date">'+(n.date||'')+( tecnico?' · '+tecnico:'' )+'</div>'+
-      '<div class="note-title">'+(urgente?'🚨 ':'')+titulo+'</div>'+
-      (n.category?'<span class="pill pill-gold" style="margin:4px 0 6px;display:inline-flex;font-size:10px;">'+n.category+'</span>':'')+
+      '<div class="note-title">'+(urgente?'⚠ ':'')+titulo+'</div>'+
+      (n.category?'<span class="pill pill-blue" style="margin:4px 0 6px;display:inline-flex;font-size:10px;">'+n.category+'</span>':'')+
       (cuerpo?'<div class="note-body">'+cuerpo+'</div>':'')+
       '</div>';
   }).join('');
@@ -926,7 +962,7 @@ function openModalDiary(id) {
   }
   openModal(n?'Editar entrada':'Nueva entrada diario',`
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${n?`<button class="btn-del" onclick="deleteDiary('${n.id}')">🗑️ Eliminar entrada</button>`:''}
+      ${n?`<button class="btn-del" onclick="deleteDiary('${n.id}')">Eliminar entrada</button>`:''}
       <div><label>Título</label><input id="m-title" value="${titulo.replace(/"/g,'&quot;')}"></div>
       <div><label>Fecha</label><input id="m-date" type="date" value="${fechaVal}"></div>
       <div><label>Técnico</label><input id="m-tech" value="${tecnico.replace(/"/g,'&quot;')}"></div>
@@ -993,33 +1029,32 @@ function saveModal() {
 /* ── MAPA ── */
 function renderMap() {
   const allFloors = db.floors;
-  if (!allFloors.length) { document.getElementById('map-view').innerHTML=`<div class="empty"><div class="empty-icon">🗺️</div><div class="empty-title">Sin plantas</div></div>`; return; }
+  if (!allFloors.length) { document.getElementById('map-view').innerHTML=`<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">Sin plantas</div></div>`; return; }
   if (!activeFloor && allFloors.length) activeFloor = allFloors[0].id;
   const fsOn = document.body.classList.contains('map-fullscreen');
   document.getElementById('floor-tabs').innerHTML =
     allFloors.map(f=>`
-    <button onclick="activeFloor=${f.id};activeMapPc=null;renderMap()" style="flex-shrink:0;padding:5px 12px;border-radius:20px;border:1px solid ${activeFloor===f.id?'var(--gold)':'var(--border)'};background:${activeFloor===f.id?'rgba(212,175,55,0.15)':'var(--bg2)'};color:${activeFloor===f.id?'var(--gold)':'var(--muted)'};font-family:Syne,sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">
+    <button onclick="activeFloor=${f.id};activeMapPc=null;renderMap()" style="flex-shrink:0;padding:4px 11px;border-radius:5px;border:1px solid ${activeFloor===f.id?'var(--accent)':'var(--border)'};background:${activeFloor===f.id?'rgba(79,127,255,0.15)':'var(--bg2)'};color:${activeFloor===f.id?'var(--accent)':'var(--muted)'};font-family:Inter,sans-serif;font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;">
       ${f.name}</button>`).join('')
-    + `<button onclick="toggleMapFullscreen()" title="${fsOn?'Salir de pantalla completa':'Pantalla completa'}" style="flex-shrink:0;margin-left:auto;padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);font-size:14px;cursor:pointer;">${fsOn?'✕':'⛶'}</button>`;
+    + `<button onclick="toggleMapFullscreen()" title="${fsOn?'Salir de pantalla completa':'Pantalla completa'}" style="flex-shrink:0;margin-left:auto;padding:4px 9px;border-radius:5px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);font-size:13px;cursor:pointer;">${fsOn?'✕':'⛶'}</button>`;
   const floor = allFloors.find(f=>f.id===activeFloor);
   const pcs = db.computers.filter(pc=>(pc.floorId===activeFloor||pc.floor===activeFloor)&&pc.mapX!==undefined);
   const img = db.floorImages&&(db.floorImages[activeFloor]||db.floorImages[String(activeFloor)]);
   let html = `<div class="map-container" id="map-container" onclick="if(event.target===this||event.target.id==='map-inner'||event.target.tagName==='IMG'){activeMapPc=null;renderMap();}"><div class="map-inner" id="map-inner">`;
   if (img) html+=`<img src="${img}" alt="Plano ${floor?.name}" style="width:100%;display:block;">`;
-  else html+=`<div style="min-height:220px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;flex-direction:column;gap:8px;"><span style="font-size:36px">🗺️</span>Sin imagen de plano</div>`;
+  else html+=`<div style="min-height:220px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;flex-direction:column;gap:8px;opacity:.5;">Sin imagen de plano</div>`;
   pcs.forEach(pc => {
     const isAct = activeMapPc===pc.id;
     const isPrinter = pc.deviceType === 'printer';
-    const markerBg = isPrinter ? 'rgba(124,58,237,0.9)' : 'var(--bg)';
-    const markerIcon = isPrinter ? '🖨️' : '🖥️';
-    html+=`<div class="map-marker" style="left:${pc.mapX}%;top:${pc.mapY}%;border-color:${isAct?'var(--red)':isPrinter?'#7c3aed':'var(--gold)'};background:${markerBg};" onclick="toggleMapPc('${pc.id}')">${isPrinter?'🖨':'🖥'}</div>`;
+    const markerBg = isPrinter ? 'rgba(124,58,237,0.85)' : 'var(--bg2)';
+    html+=`<div class="map-marker" style="left:${pc.mapX}%;top:${pc.mapY}%;border-color:${isAct?'var(--red)':isPrinter?'#7c3aed':'var(--accent)'};background:${markerBg};" onclick="toggleMapPc('${pc.id}')"></div>`;
     if (isAct) {
       const tipLeft = pc.mapX > 60 ? `right:calc(${100-pc.mapX}% + 14px)` : `left:calc(${pc.mapX}% + 14px)`;
       const tipTop  = pc.mapY > 55 ? `bottom:calc(${100-pc.mapY}% + 14px)` : `top:calc(${pc.mapY}% - 10px)`;
       html+=`<div class="map-tooltip" style="${tipLeft};${tipTop};">
-        <div style="font-weight:700;color:var(--gold);margin-bottom:3px;font-size:11px;">${isPrinter?'🖨':'🖥'} ${pc.name}</div>
-        ${pc.ip?`<div style="font-family:JetBrains Mono,monospace;font-size:10px;color:var(--blue)">${pc.ip}</div>`:''}
-        ${pc.assignedTo?`<div style="font-size:10px;margin-top:2px;color:var(--text)">👤 ${pc.assignedTo}</div>`:''}
+        <div style="font-weight:600;color:var(--text);margin-bottom:3px;font-size:11px;">${pc.name}</div>
+        ${pc.ip?`<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--accent)">${pc.ip}</div>`:''}
+        ${pc.assignedTo?`<div style="font-size:10px;margin-top:2px;color:var(--muted)">${pc.assignedTo}</div>`:''}
         ${pc.groupName?`<div style="font-size:10px;color:var(--muted)">${pc.groupName}</div>`:''}
       </div>`;
     }
@@ -1041,7 +1076,7 @@ function renderDgp() {
   const q = (document.getElementById('search-dgp').value||'').toLowerCase();
   const list = (db.dgpDevices||[]).filter(d => !q || [d.nombre,d.modelo,d.imei,d.simAbonado,d.pass,d.fechaEntrega].some(v=>v&&v.toLowerCase().includes(q)));
   if (!list.length) {
-    document.getElementById('list-dgp').innerHTML = `<div class="empty"><div class="empty-icon">🔐</div><div class="empty-title">${(db.dgpDevices||[]).length?'Sin resultados':'Sin dispositivos DGP'}</div><div class="empty-sub">Añade dispositivos desde la app de escritorio o con el botón +</div></div>`;
+    document.getElementById('list-dgp').innerHTML = `<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">${(db.dgpDevices||[]).length?'Sin resultados':'Sin dispositivos DGP'}</div><div class="empty-sub">Añade dispositivos desde la app de escritorio o con el botón +</div></div>`;
     return;
   }
   document.getElementById('list-dgp').innerHTML = list.map(d => `
@@ -1052,7 +1087,7 @@ function renderDgp() {
           ${d.modelo?`<div class="card-sub">${d.modelo}</div>`:''}
         </div>
         <div style="display:flex;gap:6px;">
-          <button class="edit-btn" onclick="openModalDgp('${d.id}')">✏️</button>
+          <button class="edit-btn" onclick="openModalDgp('${d.id}')"> Editar</button>
         </div>
       </div>
       ${d.fechaEntrega?`<div class="info-row"><span class="info-label">Entrega</span><span class="info-val plain">${d.fechaEntrega}</span></div>`:''}
@@ -1077,7 +1112,7 @@ function openModalDgp(id) {
   const d = id ? (db.dgpDevices||[]).find(x=>x.id===id) : null;
   openModal(d?'Editar dispositivo DGP':'Nuevo dispositivo DGP', `
     <div style="display:flex;flex-direction:column;gap:12px;">
-      ${d?`<button class="btn-del" onclick="deleteDgp('${d.id}')">🗑️ Eliminar dispositivo</button>`:''}
+      ${d?`<button class="btn-del" onclick="deleteDgp('${d.id}')">Eliminar dispositivo</button>`:''}
       <div><label>Nombre / Asignado</label><input id="m-nombre" value="${d?.nombre||''}"></div>
       <div><label>Fecha entrega</label><input id="m-fecha" type="date" value="${d?.fechaEntrega||''}"></div>
       <div><label>Modelo</label><input id="m-modelo" value="${d?.modelo||''}"></div>
