@@ -244,7 +244,17 @@ input[type=file]{display:none;}
   </div>
 
   <div id="content">
-    <div class="tab active" id="tab-pcs">
+    <!-- ── HOME DASHBOARD ── -->
+    <div class="tab active" id="tab-home" style="padding:0;overflow-y:auto;background:var(--bg);">
+      <div style="padding:14px 14px 0;">
+        <div class="search-wrap" style="margin:0;">
+          <input type="text" id="search-home" placeholder="Buscar PCs, personal, diario…" oninput="renderHomeSearch()" autocomplete="off">
+        </div>
+      </div>
+      <div id="home-search-results" style="display:none;padding:10px 14px;"></div>
+      <div id="home-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px 80px;"></div>
+    </div>
+    <div class="tab" id="tab-pcs">
       <div class="search-wrap"><input type="text" id="search-pcs" placeholder="Buscar PC, IP, usuario…" oninput="renderPcs()"></div>
       <div class="stats-bar" id="stats-pcs"></div>
       <div id="list-pcs"></div>
@@ -277,7 +287,11 @@ input[type=file]{display:none;}
   </div>
 
   <nav id="navbar">
-    <button class="nav-item active" onclick="switchTab('pcs',this)">
+    <button class="nav-item active" onclick="switchTab('home',this)">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
+      <span class="nav-label">Inicio</span>
+    </button>
+    <button class="nav-item" onclick="switchTab('pcs',this)">
       <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="17" x2="6" y2="21"/><line x1="16" y1="17" x2="18" y2="21"/><line x1="5" y1="21" x2="19" y2="21"/></svg></span>
       <span class="nav-label">PCs</span>
     </button>
@@ -329,7 +343,7 @@ const SYNC_INTERVAL_MS = 5 * 60 * 1000; // auto-refresco cada 5 min
 // ────────────────────────────────────────────────────────────────────
 
 let db = {computers:[],floors:[],notesHistory:[],staff:[],manuals:[],phones:[],dgpDevices:[],floorImages:{}};
-let activeTab = 'pcs';
+let activeTab = 'home';
 let activeFloor = 0;
 let activeMapPc = null;
 let hasChanges = false;
@@ -686,14 +700,160 @@ function switchTab(name, btn) {
   document.getElementById('tab-' + name).classList.add('active');
   btn.classList.add('active');
   activeTab = name;
-  const noFab = ['map'];
+  const noFab = ['map', 'home'];
   document.getElementById('fab').style.display = noFab.includes(name) ? 'none' : 'flex';
+  if (name === 'home') renderHome();
 }
 
 function renderAll() {
   renderPcs(); renderStaff(); renderMap(); renderManuals(); renderDiary(); renderDgp();
-  document.getElementById('fab').style.display = 'flex';
+  renderHome();
+  document.getElementById('fab').style.display = 'none'; // home es la tab inicial, sin FAB
   document.getElementById('export-btn').style.display = 'block';
+}
+
+/* ── HOME DASHBOARD ── */
+function renderHome() {
+  const grid = document.getElementById('home-grid');
+  if (!grid) return;
+  const sections = [
+    {
+      id: 'pcs', label: 'PCs', color: '#4f7fff',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="17" x2="6" y2="21"/><line x1="16" y1="17" x2="18" y2="21"/><line x1="5" y1="21" x2="19" y2="21"/></svg>',
+      stat: () => {
+        const total = (db.computers||[]).length;
+        const online = (db.computers||[]).filter(c=>c.status==='activo'||c.status==='Activo').length;
+        return { main: total, sub: online ? online + ' activos' : total + ' equipos' };
+      }
+    },
+    {
+      id: 'personal', label: 'Personal', color: '#34c97a',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M19 8v6m-3-3h6" stroke-width="1.7"/></svg>',
+      stat: () => ({ main: (db.staff||[]).length, sub: 'funcionarios' })
+    },
+    {
+      id: 'diary', label: 'Diario', color: '#f5a623',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+      stat: () => {
+        const notas = (db.notesHistory||[]);
+        const urgentes = notas.filter(n=>n.isUrgent).length;
+        return { main: notas.length, sub: urgentes ? urgentes + ' urgentes' : 'entradas' };
+      }
+    },
+    {
+      id: 'map', label: 'Ubicación', color: '#a78bfa',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>',
+      stat: () => ({ main: (db.floors||[]).length, sub: 'plantas' })
+    },
+    {
+      id: 'manuals', label: 'Manuales', color: '#38bdf8',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+      stat: () => ({ main: (db.manuals||[]).length, sub: 'documentos' })
+    },
+    {
+      id: 'dgp', label: 'DGP', color: '#fb7185',
+      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+      stat: () => ({ main: (db.dgpDevices||[]).length, sub: 'dispositivos' })
+    }
+  ];
+
+  grid.innerHTML = sections.map(s => {
+    const { main, sub } = s.stat();
+    return `<button onclick="goSection('${s.id}')" style="
+      background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+      padding:16px 14px 14px;text-align:left;cursor:pointer;
+      display:flex;flex-direction:column;gap:10px;
+      transition:border-color .15s,background .15s;min-height:110px;
+      -webkit-tap-highlight-color:transparent;
+    " onpointerdown="this.style.background='var(--bg3)'" onpointerup="this.style.background='var(--bg2)'" onpointerleave="this.style.background='var(--bg2)'">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="width:36px;height:36px;border-radius:8px;background:${s.color}1a;display:flex;align-items:center;justify-content:center;color:${s.color};">${s.icon}</div>
+        <div style="font-size:26px;font-weight:700;color:var(--text);line-height:1;">${main}</div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text);">${s.label}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${sub}</div>
+      </div>
+    </button>`;
+  }).join('');
+}
+
+function goSection(name) {
+  const navBtns = document.querySelectorAll('.nav-item');
+  // orden del nav: home, pcs, personal, map, manuals, diary, dgp
+  const order = ['home','pcs','personal','map','manuals','diary','dgp'];
+  const idx = order.indexOf(name);
+  if (idx >= 0 && navBtns[idx]) switchTab(name, navBtns[idx]);
+}
+
+function renderHomeSearch() {
+  const q = (document.getElementById('search-home').value || '').toLowerCase().trim();
+  const resDiv = document.getElementById('home-search-results');
+  const grid   = document.getElementById('home-grid');
+  if (!q) {
+    resDiv.style.display = 'none';
+    grid.style.display = 'grid';
+    return;
+  }
+  grid.style.display = 'none';
+  resDiv.style.display = 'block';
+
+  const results = [];
+
+  // PCs
+  (db.computers||[]).filter(c =>
+    [c.name,c.ip,c.assignedTo,c.serialNumber,c.model,c.groupName,c.notes].some(v=>v&&String(v).toLowerCase().includes(q))
+  ).slice(0,5).forEach(c => results.push({
+    type:'PC', label: c.name||c.ip||'Sin nombre',
+    sub: [c.ip, c.assignedTo].filter(Boolean).join(' · '),
+    action: `goSection('pcs')`
+  }));
+
+  // Personal
+  (db.staff||[]).filter(p =>
+    [p.name,p.placa,p.dni,p.destino,p.telefono].some(v=>v&&String(v).toLowerCase().includes(q))
+  ).slice(0,5).forEach(p => results.push({
+    type:'Personal', label: p.name||'Sin nombre',
+    sub: [p.placa, p.destino].filter(Boolean).join(' · '),
+    action: `goSection('personal')`
+  }));
+
+  // Diario
+  (db.notesHistory||[]).filter(n =>
+    [n.title,n.content,n.text,n.technician,n.author].some(v=>v&&String(v).toLowerCase().includes(q))
+  ).slice(0,5).forEach(n => results.push({
+    type:'Diario', label: n.title||n.text||'Sin título',
+    sub: n.date||n.createdAt||'',
+    action: `goSection('diary')`
+  }));
+
+  // Manuales
+  (db.manuals||[]).filter(m =>
+    [m.title,m.description,m.url].some(v=>v&&String(v).toLowerCase().includes(q))
+  ).slice(0,3).forEach(m => results.push({
+    type:'Manual', label: m.title||'Sin título',
+    sub: m.description||'',
+    action: `goSection('manuals')`
+  }));
+
+  if (!results.length) {
+    resDiv.innerHTML = `<div style="text-align:center;color:var(--muted);padding:32px 0;font-size:14px;">Sin resultados para "${q}"</div>`;
+    return;
+  }
+
+  const typeColor = {PC:'#4f7fff',Personal:'#34c97a',Diario:'#f5a623',Manual:'#38bdf8'};
+  resDiv.innerHTML = results.map(r => `
+    <div onclick="${r.action}" style="
+      background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+      padding:10px 13px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px;
+    ">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.06em;color:${typeColor[r.type]||'var(--accent)'};
+        background:${typeColor[r.type]||'var(--accent)'}1a;border-radius:4px;padding:2px 7px;flex-shrink:0;">${r.type}</span>
+      <div style="min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.label}</div>
+        ${r.sub?`<div style="font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.sub}</div>`:''}
+      </div>
+    </div>`).join('');
 }
 
 /* ── FAB ── */
