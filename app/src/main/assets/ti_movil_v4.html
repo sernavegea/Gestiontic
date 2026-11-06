@@ -394,39 +394,79 @@ function scheduleDriveSave() {
 function driveSave() {
   if (!DRIVE || !hasChanges) return;
   setSyncing(true);
-  // Si el archivo cambió en Drive desde la última lectura (p.ej. desde el PC),
-  // hacemos merge: leemos la versión nueva y le sobreponemos nuestro db.
+
+  // 1. Leer versión actual de Drive para merge y recuperar imágenes
   const current = DRIVE.read();
-  if (current && !isErr(current) && current !== driveText) {
-    // Hay versión nueva en Drive: fusionar manteniendo nuestros datos como autoridad
-    // (el PC actualiza masivamente; el móvil hace cambios puntuales)
+  let driveImages = db.floorImages || {};
+
+  if (current && !isErr(current)) {
     try {
       const fresh = JSON.parse(current);
-      // Preservar cambios del móvil sobre la versión fresca del PC
-      db = Object.assign(fresh, {
-        computers: db.computers,
-        floors: db.floors,
-        notesHistory: db.notesHistory,
-        staff: db.staff,
-        manuals: db.manuals,
-        phones: db.phones,
-        dgpDevices: db.dgpDevices,
-        floorImages: db.floorImages
-      });
-    } catch(e) { /* remoto ilegible: usar nuestro db */ }
+      // Siempre usamos las imágenes de Drive (el móvil no las edita)
+      driveImages = fresh.floorImages || {};
+      if (current !== driveText) {
+        // Drive tiene versión más nueva (p.ej. el PC actualizó): mergear
+        // Usamos spread para NO mutar el objeto fresco
+        db = {
+          ...fresh,
+          computers:    db.computers,
+          floors:       db.floors,
+          notesHistory: db.notesHistory,
+          staff:        db.staff,
+          manuals:      db.manuals,
+          phones:       db.phones,
+          dgpDevices:   db.dgpDevices,
+          floorImages:  driveImages
+        };
+      } else {
+        // Sin cambios externos: solo actualizar imágenes (pueden haber llegado del PC)
+        db.floorImages = driveImages;
+      }
+    } catch(e) { /* JSON inválido en Drive: usar nuestro db */ }
   }
-  const out = JSON.stringify(db, null, 2);
+
+  // 2. Serializar y validar antes de escribir
+  let out;
+  try {
+    out = JSON.stringify(db, null, 2);
+    JSON.parse(out); // verificación: si stringify produce algo inválido, lanzará
+  } catch(e) {
+    setSyncing(false);
+    alert('Error interno al preparar el JSON:\n' + e.message + '\n\nNo se guardó nada.');
+    return;
+  }
+
+  // 3. Escribir
   const res = DRIVE.write(out);
   if (isErr(res)) {
     setSyncing(false);
     updateTopbar();
-    alert('No se pudo guardar en Drive:\n' + res + '\n\nLos cambios siguen en el móvil. Pulsa ⬆ Guardar para reintentar.');
+    alert('No se pudo guardar en Drive:\n' + res + '\n\nLos cambios siguen en el móvil.');
     return;
   }
-  driveText = out;
+
+  // 4. Verificar escritura leyendo de vuelta
+  const verify = DRIVE.read();
+  if (!verify || isErr(verify)) {
+    setSyncing(false);
+    toast('⚠ Guardado pero no verificado');
+    hasChanges = false;
+    lastSync = new Date();
+    updateTopbar();
+    return;
+  }
+  try {
+    JSON.parse(verify); // si está roto lo detectamos aquí
+  } catch(e) {
+    setSyncing(false);
+    alert('⚠ El archivo en Drive parece corrupto tras guardar.\nRevisa datos_ti.json desde el PC.\n' + e.message);
+    return;
+  }
+
+  driveText = verify;
   hasChanges = false;
   lastSync = new Date();
-  try { localStorage.setItem(CACHE_KEY, out); } catch (e) {}
+  try { localStorage.setItem(CACHE_KEY, out); } catch(e) {}
   setSyncing(false);
   toast('Guardado en Drive ✓');
   updateTopbar();
