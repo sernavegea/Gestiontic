@@ -437,7 +437,15 @@ function driveSave() {
   }
 
   // 3. Escribir
-  const res = DRIVE.write(out);
+  // Escritura por chunks para evitar truncado del bridge JS→Java en ficheros grandes
+  const CHUNK = 400000; // 400 KB por chunk, seguro para el bridge Android
+  let res = DRIVE.writeStart();
+  if (!isErr(res)) {
+    for (let i = 0; i < out.length && !isErr(res); i += CHUNK) {
+      res = DRIVE.writeChunk(out.slice(i, i + CHUNK));
+    }
+    if (!isErr(res)) res = DRIVE.writeEnd();
+  }
   if (isErr(res)) {
     setSyncing(false);
     updateTopbar();
