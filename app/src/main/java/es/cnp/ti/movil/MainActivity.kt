@@ -25,6 +25,9 @@ class MainActivity : AppCompatActivity() {
     // ── Puente nativo AndroidDrive expuesto al WebView ─────────────────
     inner class AndroidDriveBridge {
 
+        // Buffer para escritura por chunks (evita límite de string del bridge JS→Java)
+        private val writeBuffer = StringBuilder()
+
         @JavascriptInterface
         fun hasFile(): Boolean = linkedUri != null
 
@@ -43,7 +46,6 @@ class MainActivity : AppCompatActivity() {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "application/json"
-                    // Sugerir Google Drive como origen
                     putExtra(Intent.EXTRA_TITLE, "datos_ti.json")
                 }
                 startActivityForResult(intent, REQ_OPEN_DRIVE)
@@ -61,17 +63,56 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // ── Escritura atómica por chunks ───────────────────────────────
+        // JS llama: writeStart() → writeChunk(chunk)×N → writeEnd()
+        // Así el JSON nunca se trunca aunque supere el límite del bridge.
+
         @JavascriptInterface
-        fun write(content: String): String {
-            val uri = linkedUri ?: return "!ERR: No hay archivo vinculado"
+        fun writeStart(): String {
+            writeBuffer.clear()
+            return "OK"
+        }
+
+        @JavascriptInterface
+        fun writeChunk(chunk: String): String {
             return try {
-                contentResolver.openOutputStream(uri, "wt")?.bufferedWriter()?.use {
-                    it.write(content)
-                } ?: return "!ERR: No se pudo abrir para escritura"
+                writeBuffer.append(chunk)
                 "OK"
             } catch (e: Exception) {
+                writeBuffer.clear()
                 "!ERR: ${e.message}"
             }
+        }
+
+        @JavascriptInterface
+        fun writeEnd(): String {
+            val uri = linkedUri ?: run { writeBuffer.clear(); return "!ERR: No hay archivo vinculado" }
+            return try {
+                val content = writeBuffer.toString()
+                writeBuffer.clear()
+                // Escribir en un fichero temporal primero para no truncar el original si falla
+                val tmp = java.io.File(cacheDir, "ti_save_tmp.json")
+                tmp.writeText(content, Charsets.UTF_8)
+                // Ahora copiar al URI de Drive (modo "wt" = truncar + escribir)
+                contentResolver.openOutputStream(uri, "wt")?.use { out ->
+                    tmp.inputStream().use { it.copyTo(out) }
+                } ?: run { tmp.delete(); return "!ERR: No se pudo abrir para escritura" }
+                tmp.delete()
+                "OK"
+            } catch (e: Exception) {
+                writeBuffer.clear()
+                "!ERR: ${e.message}"
+            }
+        }
+
+        // write() de compatibilidad — mantener por si acaso
+        @JavascriptInterface
+        fun write(content: String): String {
+            val start = writeStart()
+            if (start != "OK") return start
+            val chunk = writeChunk(content)
+            if (chunk != "OK") return chunk
+            return writeEnd()
         }
     }
 
