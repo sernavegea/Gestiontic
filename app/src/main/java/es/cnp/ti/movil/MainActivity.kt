@@ -156,7 +156,14 @@ class MainActivity : AppCompatActivity() {
         webView.addJavascriptInterface(AndroidDriveBridge(), "AndroidDrive")
 
         webView.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest) = false
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url.toString()
+                if (url.startsWith("tel:")) {
+                    startActivity(Intent(Intent.ACTION_DIAL, Uri.parse(url)))
+                    return true
+                }
+                return false
+            }
         }
 
         webView.webChromeClient = object : WebChromeClient() {
