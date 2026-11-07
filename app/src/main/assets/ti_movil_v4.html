@@ -1178,10 +1178,9 @@ function renderDiary() {
     .map(({n})=>n);
   if (!list.length) { document.getElementById('list-diary').innerHTML='<div class="empty"><div class="empty-icon" style="font-size:28px;opacity:.3;">—</div><div class="empty-title">'+(db.notesHistory&&db.notesHistory.length?'Sin resultados':'Sin entradas')+'</div></div>'; return; }
   document.getElementById('list-diary').innerHTML=list.map(function(n){
-    const hasTitle = n.title && n.title.trim();
-    const titulo  = hasTitle ? n.title : (n.text || 'Sin título');
-    const tecnico = n.technician || n.author || '';
-    const cuerpo  = hasTitle ? (n.content || '') : '';
+    const titulo  = n.text || 'Sin observaciones';
+    const tecnico = n.author || '';
+    const cuerpo  = '';
     const urgente = n.isUrgent;
     const accentClr = urgente ? 'var(--red)' : 'var(--border)';
     const bgClr = urgente ? 'rgba(240,79,90,.06)' : 'var(--bg2)';
@@ -1204,30 +1203,16 @@ function renderDiary() {
 }
 function openModalDiary(id) {
   const n = id ? db.notesHistory.find(x=>String(x.id)===String(id)) : null;
-  const today = new Date().toISOString().split('T')[0];
-  // Compatibilidad con notas del PC (usan 'text'/'author') y del móvil ('title'/'technician')
-  const titulo   = n ? (n.title || '') : '';
-  const tecnico  = n ? (n.technician || n.author || '') : '';
-  // Si la entrada tiene 'content' propio úsalo; si no, el campo 'text' del PC va al textarea
-  const contenido= n ? (n.content !== undefined ? n.content : (n.text || '')) : '';
-  // Fecha: intentar extraer YYYY-MM-DD de cualquier formato
-  let fechaVal = today;
-  if (n) {
-    const src = n.date || n.createdAt || '';
-    const mEs = String(src).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
-    if (mEs) fechaVal = `${mEs[3]}-${mEs[2].padStart(2,'0')}-${mEs[1].padStart(2,'0')}`;
-    else if (src) { const d = new Date(src); if (!isNaN(d)) fechaVal = d.toISOString().split('T')[0]; }
-  }
-  openModal(n?'Editar entrada':'Nueva entrada diario',`
+  const autor = n ? (n.author || '') : '';
+  const texto = n ? (n.text || '') : '';
+  openModal(n?'Editar entrada':'Nueva entrada',`
     <div style="display:flex;flex-direction:column;gap:12px;">
       ${n?`<button class="btn-del" onclick="deleteDiary('${n.id}')">Eliminar entrada</button>`:''}
-      <div><label>Título / Resumen</label><input id="m-title" value="${titulo.replace(/"/g,'&quot;')}"></div>
-      <div><label>Técnico</label><input id="m-tech" value="${tecnico.replace(/"/g,'&quot;')}"></div>
-      <div><label>Categoría</label><input id="m-cat" value="${(n?.category||'').replace(/"/g,'&quot;')}"></div>
-      <div><label>Observaciones</label><textarea id="m-content" style="min-height:140px;">${contenido}</textarea></div>
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;">
+      <div><label>Técnico</label><input id="m-author" value="${autor.replace(/"/g,'&quot;')}"></div>
+      <div><label>Observaciones</label><textarea id="m-text" style="min-height:160px;">${texto.replace(/</g,'&lt;')}</textarea></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
         <input type="checkbox" id="m-urgent" style="width:18px;height:18px;accent-color:var(--red);cursor:pointer;"${n?.isUrgent?' checked':''}>
-        <label for="m-urgent" style="font-size:13px;color:var(--red);font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;">Marcar como URGENTE</label>
+        <label for="m-urgent" style="font-size:13px;color:var(--red);font-weight:600;cursor:pointer;text-transform:none;letter-spacing:0;">URGENTE</label>
       </div>
     </div>`,'diary',id);
 }
@@ -1265,45 +1250,19 @@ function saveModal() {
     renderManuals();
   } else if (modalMode === 'diary') {
     const isUrgentVal = !!(document.getElementById('m-urgent') && document.getElementById('m-urgent').checked);
-    const content = val('m-content');
-    const title   = val('m-title');
-    const tech    = val('m-tech');
+    const author = val('m-author');
+    const text   = val('m-text');
     if (editId) {
-      const idx=db.notesHistory.findIndex(x=>String(x.id)===String(editId));
-      if(idx>=0) {
+      const idx = db.notesHistory.findIndex(x=>String(x.id)===String(editId));
+      if (idx >= 0) {
         const orig = db.notesHistory[idx];
-        // Preservar SIEMPRE la fecha original (el PC la espera en su propio formato)
-        // Actualizar campos PC (text, author) y campos móvil (title, content, technician)
-        const updated = {
-          ...orig,
-          text:       content,
-          author:     tech || orig.author,
-          isUrgent:   isUrgentVal,
-          technician: tech,
-          category:   val('m-cat'),
-          content:    content,
-        };
-        // Solo guardar title si tiene valor; si está vacío eliminarlo para no contaminar el render
-        if (title.trim()) updated.title = title.trim();
-        else delete updated.title;
-        db.notesHistory[idx] = updated;
+        // Solo los cinco campos del PC — sin añadir nada extra
+        db.notesHistory[idx] = { id: orig.id, date: orig.date, author, text, isUrgent: isUrgentVal };
       }
     } else {
-      // Nueva entrada: generar fecha en el mismo formato que usa el PC
       const now = new Date();
       const dateStr = now.toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
-      const newEntry = {
-        id:         uid(),
-        date:       dateStr,
-        author:     tech,
-        text:       content || title,
-        isUrgent:   isUrgentVal,
-        technician: tech,
-        category:   val('m-cat'),
-        content:    content,
-      };
-      if (title.trim()) newEntry.title = title.trim();
-      db.notesHistory.push(newEntry);
+      db.notesHistory.push({ id: uid(), date: dateStr, author, text, isUrgent: isUrgentVal });
     }
     renderDiary();
   } else if (modalMode === 'dgp') {
