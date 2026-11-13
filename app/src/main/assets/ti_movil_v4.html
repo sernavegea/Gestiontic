@@ -312,21 +312,6 @@ input[type=file]{display:none;}
       <div id="list-dgp"></div>
     </div>
 
-    <!-- TICKETS -->
-    <div class="tab" id="tab-tickets" style="display:flex;flex-direction:column;overflow:hidden;">
-      <div style="padding:10px 12px 6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--border);">
-        <input type="text" id="search-tickets" placeholder="Buscar tickets…" oninput="renderTickets()" style="flex:1;min-width:120px;">
-        <select id="filter-tickets" onchange="renderTickets()" style="flex:0 0 auto;padding:6px 8px;font-size:12px;">
-          <option value="">Todos</option>
-          <option value="abierta">Abiertas</option>
-          <option value="en_curso">En curso</option>
-          <option value="cerrada">Cerradas</option>
-        </select>
-        <button onclick="fetchTickets()" style="padding:5px 10px;font-size:12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--accent);">↻</button>
-      </div>
-      <div id="tickets-status" style="font-size:11px;color:var(--muted);padding:4px 12px;min-height:18px;"></div>
-      <div id="list-tickets" style="flex:1;overflow-y:auto;padding:8px 12px;display:flex;flex-direction:column;gap:8px;"></div>
-    </div>
   </div>
 
 </div>
@@ -712,7 +697,7 @@ function exportJSON() {
 /* ── TAB ── */
 const SECTION_NAMES = {
   home:'INICIO', pcs:'EQUIPOS', personal:'PERSONAL',
-  map:'UBICACIONES', manuals:'MANUALES', diary:'DIARIO', dgp:'DGP', tickets:'TICKETS'
+  map:'UBICACIONES', manuals:'MANUALES', diary:'DIARIO', dgp:'DGP'
 };
 function switchTab(name) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -724,119 +709,12 @@ function switchTab(name) {
   const isHome = name === 'home';
   document.getElementById('home-btn').style.display = isHome ? 'none' : 'flex';
   if (isHome) renderHome();
-  if (name === 'tickets' && !ticketsData.length) fetchTickets();
 }
 
 function renderAll() {
   renderPcs(); renderStaff(); renderMap(); renderManuals(); renderDiary(); renderDgp();
   renderHome();
   document.getElementById('fab').style.display = 'none'; // home es la tab inicial, sin FAB
-}
-
-// ===================== TICKETS (Portal Informática) =====================
-const PORTAL_URL = 'http://10.66.242.203:3002';
-let portalToken = localStorage.getItem('portalToken') || '';
-let ticketsData  = [];
-
-async function portalLogin() {
-  const pwd = prompt('Contraseña admin del portal de incidencias:');
-  if (!pwd) return false;
-  try {
-    const r = await fetch(PORTAL_URL + '/api/login', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ password: pwd })
-    });
-    const d = await r.json();
-    if (d.token) {
-      portalToken = d.token;
-      localStorage.setItem('portalToken', portalToken);
-      return true;
-    }
-    alert('Contraseña incorrecta');
-  } catch { alert('No se puede conectar con el portal (' + PORTAL_URL + ')'); }
-  return false;
-}
-
-async function fetchTickets() {
-  const st = document.getElementById('tickets-status');
-  if (st) st.textContent = 'Conectando…';
-  // Si no hay token pedir login antes de llamar
-  if (!portalToken) {
-    const ok = await portalLogin();
-    if (!ok) { if (st) st.textContent = 'Sin credenciales'; return; }
-  }
-  try {
-    const r = await fetch(PORTAL_URL + '/api/datos', { headers: { Authorization: 'Bearer ' + portalToken } });
-    if (r.status === 401) {
-      localStorage.removeItem('portalToken'); portalToken = '';
-      const ok = await portalLogin();
-      if (ok) fetchTickets();
-      return;
-    }
-    const d = await r.json();
-    ticketsData = d.incidencias || [];
-    if (st) st.textContent = 'Actualizado ' + new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}) + ' · ' + ticketsData.length + ' tickets';
-    renderTickets();
-  } catch (e) {
-    if (st) st.textContent = 'Error al conectar con el portal';
-  }
-}
-
-function renderTickets() {
-  const el = document.getElementById('list-tickets');
-  if (!el) return;
-  const q   = (document.getElementById('search-tickets')?.value || '').toLowerCase();
-  const est = document.getElementById('filter-tickets')?.value || '';
-  let list  = ticketsData.filter(t => {
-    if (est && t.estado !== est) return false;
-    if (q && !((t.titulo||'')+(t.descripcion||'')+(t.puesto||'')+(t.categoria||'')).toLowerCase().includes(q)) return false;
-    return true;
-  });
-  if (!list.length) {
-    el.innerHTML = `<div style="text-align:center;color:var(--muted);padding:40px 0;font-size:13px;">${ticketsData.length?'Sin resultados':'Pulsa ↻ para cargar los tickets'}</div>`;
-    return;
-  }
-  const colorEst = { abierta:'#ef4444', en_curso:'#f59e0b', cerrada:'#22c55e' };
-  const labelEst = { abierta:'Abierta', en_curso:'En curso', cerrada:'Cerrada' };
-  el.innerHTML = list.map(t => {
-    const color = colorEst[t.estado] || 'var(--muted)';
-    const lbl   = labelEst[t.estado] || t.estado;
-    const fecha = t.actualizada || t.fecha || '';
-    const fechaStr = fecha ? new Date(fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div style="background:var(--bg2);border-radius:10px;padding:10px 12px;border-left:3px solid ${color};cursor:pointer;" onclick="openTicketDetail('${t.id}')">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px;">
-        <span style="font-size:13px;font-weight:600;color:var(--text);flex:1;">#${t.numero} · ${t.titulo||''}</span>
-        <span style="font-size:11px;font-weight:600;color:${color};white-space:nowrap;">${lbl}</span>
-      </div>
-      <div style="font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;">
-        ${t.puesto?`<span>🖥 ${t.puesto}</span>`:''}
-        ${t.categoria?`<span>📂 ${t.categoria}</span>`:''}
-        ${fechaStr?`<span>🕐 ${fechaStr}</span>`:''}
-      </div>
-      ${t.respuesta?`<div style="margin-top:6px;font-size:12px;color:var(--accent);border-top:1px solid var(--border);padding-top:5px;">💬 ${t.respuesta}</div>`:''}
-    </div>`;
-  }).join('');
-}
-
-function openTicketDetail(id) {
-  const t = ticketsData.find(x => x.id === id);
-  if (!t) return;
-  const colorEst = { abierta:'#ef4444', en_curso:'#f59e0b', cerrada:'#22c55e' };
-  const labelEst = { abierta:'Abierta', en_curso:'En curso', cerrada:'Cerrada' };
-  const color = colorEst[t.estado] || 'var(--muted)';
-  const fecha = t.fecha ? new Date(t.fecha).toLocaleString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-  openModal(`Ticket #${t.numero}`,`
-    <div style="display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:12px;font-weight:700;color:${color};background:${color}22;padding:3px 10px;border-radius:20px;">${labelEst[t.estado]||t.estado}</span>
-        ${t.categoria?`<span style="font-size:12px;color:var(--muted);">📂 ${t.categoria}</span>`:''}
-        ${t.prioridad?`<span style="font-size:12px;color:var(--muted);">⚡ ${t.prioridad}</span>`:''}
-      </div>
-      <div><label>Puesto</label><div style="font-size:13px;padding:4px 0;">${t.puesto||'—'}</div></div>
-      <div><label>Descripción</label><div style="font-size:13px;padding:4px 0;white-space:pre-wrap;line-height:1.5;">${(t.descripcion||'').replace(/</g,'&lt;')}</div></div>
-      ${t.respuesta?`<div><label>Respuesta</label><div style="font-size:13px;padding:4px 0;color:var(--accent);white-space:pre-wrap;">${t.respuesta.replace(/</g,'&lt;')}</div></div>`:''}
-      ${fecha?`<div style="font-size:11px;color:var(--muted);">Abierto: ${fecha}</div>`:''}
-    </div>`, 'view', null);
 }
 
 /* ── HOME DASHBOARD ── */
@@ -893,14 +771,6 @@ function renderHome() {
       icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
       stat: () => ({ main: (db.dgpDevices||[]).length, sub: 'DISPOSITIVOS' })
     },
-    {
-      id: 'tickets', label: 'TICKETS', code: 'INC-07', color: '#e08020',
-      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
-      stat: () => {
-        const abiertos = ticketsData.filter(t => t.estado === 'abierta' || t.estado === 'en_curso').length;
-        return { main: ticketsData.length || '—', sub: abiertos ? abiertos + ' ACTIVOS' : 'INCIDENCIAS' };
-      }
-    }
   ];
 
   grid.innerHTML = sections.map(s => {
